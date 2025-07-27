@@ -473,7 +473,7 @@ export class DataService {
   // Storage Management
   getStorageInfo(): { used: number; available: number; percentage: number } {
     try {
-      const test = "test";
+      // Connection test placeholder
       let used = 0;
 
       // Calculate used space

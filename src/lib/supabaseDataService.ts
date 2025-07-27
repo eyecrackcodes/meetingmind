@@ -5,7 +5,6 @@ import {
   UserSession,
   SessionActivity,
   Objective,
-  OKRCycle,
   MeetingTemplate,
   GameEvent,
   Achievement,
@@ -114,7 +113,16 @@ export class SupabaseDataService {
           longest_streak: 0,
           join_date: new Date().toISOString(),
           last_active: new Date().toISOString(),
-          stats: DEFAULT_USER_STATS.stats,
+          stats: {
+            objectives_created: 0,
+            objectives_completed: 0,
+            key_results_achieved: 0,
+            check_ins_completed: 0,
+            avg_confidence_level: 0,
+            avg_progress_rate: 0,
+            total_sessions: 0,
+            total_time_spent: 0,
+          },
         });
       }
 
@@ -730,10 +738,7 @@ export class SupabaseDataService {
   // Connection status
   async checkConnection(): Promise<boolean> {
     try {
-      const { data, error } = await supabase
-        .from("user_stats")
-        .select("id")
-        .limit(1);
+      const { error } = await supabase.from("user_stats").select("id").limit(1);
 
       return !error;
     } catch (error) {

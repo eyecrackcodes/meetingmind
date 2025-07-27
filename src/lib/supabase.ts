@@ -110,8 +110,7 @@ export const enableRLS = async (tableName: string) => {
 
   // RLS is enabled in schema creation - no need to enable programmatically
   console.log(`RLS policies configured for ${tableName} in database schema`);
-  }
-  return !error;
+  return true;
 };
 
 // Real-time subscriptions
@@ -157,10 +156,7 @@ export const subscribeToUserData = (
 // Connection status
 export const checkConnection = async () => {
   try {
-    const { data, error } = await supabase
-      .from("user_stats")
-      .select("id")
-      .limit(1);
+    const { error } = await supabase.from("user_stats").select("id").limit(1);
     return !error;
   } catch (error) {
     console.error("Supabase connection error:", error);

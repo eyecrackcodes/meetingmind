@@ -1,13 +1,4 @@
-import {
-  Achievement,
-  UserStats,
-  GameEvent,
-  AchievementCondition,
-  Objective,
-  CheckIn,
-  SessionActivity,
-  MeetingTemplate,
-} from "@/types";
+import { Achievement, UserStats, GameEvent, SessionActivity } from "@/types";
 
 // Achievement definitions for Final Expense Insurance OKR system
 export const ACHIEVEMENTS: Achievement[] = [
@@ -294,10 +285,10 @@ export class GamificationService {
   }
 
   // Check and award achievements
-  checkAchievements(
-    userStats: UserStats,
-    activity?: SessionActivity
-  ): { newAchievements: Achievement[]; pointsEarned: number } {
+  checkAchievements(userStats: UserStats): {
+    newAchievements: Achievement[];
+    pointsEarned: number;
+  } {
     const newAchievements: Achievement[] = [];
     let pointsEarned = 0;
 

@@ -167,7 +167,7 @@ function App() {
 
       // Check for new achievements
       const { newAchievements, pointsEarned } =
-        gamificationService.checkAchievements(updatedStats, activity);
+        gamificationService.checkAchievements(updatedStats);
 
       if (newAchievements.length > 0) {
         updatedStats.achievements.push(...newAchievements);

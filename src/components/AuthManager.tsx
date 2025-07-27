@@ -147,7 +147,7 @@ export function AuthManager({
             achievements: true,
             reminders: true,
             deadlines: true,
-            weeklySummary: true,
+            weekly_summary: true,
           },
           gamification: {
             enabled: true,
