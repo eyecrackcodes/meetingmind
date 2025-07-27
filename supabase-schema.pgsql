@@ -104,8 +104,8 @@ CREATE TABLE achievements (
     name TEXT NOT NULL,
     description TEXT NOT NULL,
     icon TEXT NOT NULL,
-    category achievement_category NOT NULL,
-    rarity achievement_rarity NOT NULL,
+    category TEXT NOT NULL REFERENCES achievement_category(category),
+    rarity TEXT NOT NULL REFERENCES achievement_rarity(rarity),
     points INTEGER NOT NULL,
     unlocked_date TIMESTAMPTZ DEFAULT NOW(),
     created_at TIMESTAMPTZ DEFAULT NOW()
@@ -117,14 +117,14 @@ CREATE TABLE objectives (
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
     description TEXT NOT NULL,
-    category objective_category NOT NULL,
-    level objective_level NOT NULL,
+    category TEXT NOT NULL REFERENCES objective_category(category),
+    level TEXT NOT NULL REFERENCES objective_level(level),
     owner TEXT NOT NULL,
     quarter TEXT NOT NULL,
     year INTEGER NOT NULL,
     aligned_to UUID REFERENCES objectives(id) ON DELETE SET NULL,
     confidence_level INTEGER DEFAULT 5 CHECK (confidence_level >= 1 AND confidence_level <= 10),
-    status objective_status DEFAULT 'draft',
+    status TEXT DEFAULT 'draft' REFERENCES objective_status(status),
     created_date TIMESTAMPTZ DEFAULT NOW(),
     last_updated TIMESTAMPTZ DEFAULT NOW(),
     key_results JSONB DEFAULT '[]'::jsonb,
@@ -142,7 +142,7 @@ CREATE TABLE okr_cycles (
     year INTEGER NOT NULL,
     start_date DATE NOT NULL,
     end_date DATE NOT NULL,
-    status cycle_status DEFAULT 'planning',
+    status TEXT DEFAULT 'planning' REFERENCES cycle_status(status),
     cycle_theme TEXT,
     company_priorities TEXT[] DEFAULT '{}',
     created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -180,7 +180,7 @@ CREATE TABLE game_events (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     event_id TEXT NOT NULL,
-    type game_event_type NOT NULL,
+    type TEXT NOT NULL REFERENCES game_event_type(event_type),
     title TEXT NOT NULL,
     description TEXT NOT NULL,
     points INTEGER NOT NULL,
@@ -193,7 +193,7 @@ CREATE TABLE game_events (
 CREATE TABLE user_preferences (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-    theme theme_type DEFAULT 'auto',
+    theme TEXT DEFAULT 'auto' REFERENCES theme_type(theme),
     notifications JSONB DEFAULT '{
         "achievements": true,
         "reminders": true,
@@ -206,7 +206,7 @@ CREATE TABLE user_preferences (
         "show_points": true,
         "show_achievements": true
     }'::jsonb,
-    default_view default_view_type DEFAULT 'meetings',
+    default_view TEXT DEFAULT 'meetings' REFERENCES default_view_type(view_type),
     auto_save BOOLEAN DEFAULT true,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -404,8 +404,23 @@ GRANT USAGE ON SCHEMA public TO anon, authenticated;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated;
 
+-- Create achievement definitions table first
+CREATE TABLE IF NOT EXISTS achievement_definitions (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL,
+    icon TEXT NOT NULL,
+    category TEXT NOT NULL REFERENCES achievement_category(category),
+    rarity TEXT NOT NULL REFERENCES achievement_rarity(rarity),
+    points INTEGER NOT NULL,
+    condition_type TEXT NOT NULL,
+    condition_target INTEGER NOT NULL,
+    condition_metric TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Insert sample achievement definitions (these will be used by the frontend)
-INSERT INTO public.achievement_definitions (id, name, description, icon, category, rarity, points, condition_type, condition_target, condition_metric) VALUES
+INSERT INTO achievement_definitions (id, name, description, icon, category, rarity, points, condition_type, condition_target, condition_metric) VALUES
 ('first_objective', 'Getting Started', 'Create your first objective', '🎯', 'objectives', 'common', 100, 'count', 1, 'objectives_created'),
 ('objective_master', 'Objective Master', 'Create 10 objectives', '🏆', 'objectives', 'uncommon', 500, 'count', 10, 'objectives_created'),
 ('strategic_planner', 'Strategic Planner', 'Complete 5 objectives', '🎖️', 'objectives', 'rare', 1000, 'count', 5, 'objectives_completed'),
@@ -424,20 +439,7 @@ INSERT INTO public.achievement_definitions (id, name, description, icon, categor
 ('mentor', 'Mentor', 'Help complete 5 team objectives', '🎓', 'collaboration', 'epic', 2000, 'count', 5, 'team_objectives_completed')
 ON CONFLICT DO NOTHING;
 
--- Create achievement definitions table (if it doesn't exist)
-CREATE TABLE IF NOT EXISTS achievement_definitions (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    description TEXT NOT NULL,
-    icon TEXT NOT NULL,
-    category achievement_category NOT NULL,
-    rarity achievement_rarity NOT NULL,
-    points INTEGER NOT NULL,
-    condition_type TEXT NOT NULL,
-    condition_target INTEGER NOT NULL,
-    condition_metric TEXT NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
+
 
 -- Archive Operations Table
 CREATE TABLE archive_operations (
