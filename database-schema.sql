@@ -9,17 +9,25 @@ CREATE TYPE achievement_category AS ENUM ('objectives', 'key-results', 'check-in
 CREATE TYPE achievement_rarity AS ENUM ('common', 'uncommon', 'rare', 'epic', 'legendary');
 CREATE TYPE objective_category AS ENUM ('revenue', 'operational', 'customer', 'team', 'compliance', 'innovation');
 CREATE TYPE objective_level AS ENUM ('company', 'team', 'individual');
-CREATE TYPE objective_status AS ENUM ('draft', 'active', 'completed', 'cancelled');
-CREATE TYPE cycle_status AS ENUM ('planning', 'active', 'review', 'completed');
+CREATE TYPE objective_status AS ENUM ('draft', 'active', 'completed', 'cancelled', 'archived');
+CREATE TYPE cycle_status AS ENUM ('planning', 'active', 'review', 'completed', 'archived');
 CREATE TYPE game_event_type AS ENUM ('achievement_unlocked', 'level_up', 'streak_milestone', 'objective_completed', 'milestone_reached');
 CREATE TYPE theme_type AS ENUM ('light', 'dark', 'auto');
 CREATE TYPE default_view_type AS ENUM ('meetings', 'okr');
 
--- User Stats Table
+-- User Stats Table (Enhanced with Profile Fields)
 CREATE TABLE user_stats (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     username TEXT NOT NULL DEFAULT 'User',
+    first_name TEXT,
+    last_name TEXT,
+    role TEXT DEFAULT 'agent' CHECK (role IN ('agent', 'team_lead', 'manager', 'admin')),
+    department TEXT,
+    team TEXT,
+    license_states TEXT[],
+    hire_date DATE,
+    avatar TEXT,
     level INTEGER DEFAULT 1,
     total_points INTEGER DEFAULT 0,
     current_streak INTEGER DEFAULT 0,
@@ -381,6 +389,58 @@ CREATE TABLE IF NOT EXISTS achievement_definitions (
     condition_target INTEGER NOT NULL,
     condition_metric TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Archive Operations Table
+CREATE TABLE archive_operations (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    resource_type TEXT NOT NULL CHECK (resource_type IN ('objective', 'cycle', 'template')),
+    resource_id UUID NOT NULL,
+    resource_title TEXT NOT NULL,
+    action TEXT NOT NULL CHECK (action IN ('archive', 'restore', 'delete')),
+    reason TEXT,
+    timestamp TIMESTAMPTZ DEFAULT NOW(),
+    can_restore BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Teams Table
+CREATE TABLE teams (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    manager_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    status TEXT DEFAULT 'active' CHECK (status IN ('active', 'archived')),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Team Members Table
+CREATE TABLE team_members (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    team_id UUID REFERENCES teams(id) ON DELETE CASCADE,
+    role TEXT DEFAULT 'member' CHECK (role IN ('member', 'lead', 'manager')),
+    joined_date TIMESTAMPTZ DEFAULT NOW(),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(user_id, team_id)
+);
+
+-- AI Insights Table
+CREATE TABLE ai_insights (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    type TEXT NOT NULL CHECK (type IN ('progress', 'risk', 'opportunity', 'recommendation')),
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    priority TEXT NOT NULL CHECK (priority IN ('low', 'medium', 'high', 'critical')),
+    objective_ids UUID[],
+    action_items TEXT[],
+    deadline TIMESTAMPTZ,
+    is_resolved BOOLEAN DEFAULT false,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Comment on the database

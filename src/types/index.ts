@@ -12,12 +12,19 @@ export interface MeetingSection {
 }
 
 export interface MeetingTemplate {
+  id?: string;
   meetingTitle: string;
   meetingDate: string;
   facilitator: string;
   coreQuestion: string;
   meetingContext: string;
   sections: MeetingSection[];
+  status?: "active" | "archived";
+  createdDate?: string;
+  archivedDate?: string;
+  archivedBy?: string;
+  tags?: string[];
+  usageCount?: number;
 }
 
 export interface CriticalThinkingElement {
@@ -70,12 +77,15 @@ export interface Objective {
   quarter: string; // e.g., "2025-Q1"
   year: number;
   keyResults: KeyResult[];
-  alignedTo?: string; // Parent objective ID for alignment
+  alignedTo?: string | null;
   confidenceLevel: number; // 1-10 scale
-  status: "draft" | "active" | "completed" | "cancelled";
+  status: "draft" | "active" | "completed" | "cancelled" | "archived";
   createdDate: string;
   lastUpdated: string;
   checkIns: CheckIn[];
+  archivedDate?: string;
+  archivedBy?: string;
+  archivedReason?: string;
 }
 
 export interface CheckIn {
@@ -97,10 +107,12 @@ export interface OKRCycle {
   year: number;
   startDate: string;
   endDate: string;
-  status: "planning" | "active" | "review" | "completed";
+  status: "planning" | "active" | "review" | "completed" | "archived";
   objectives: Objective[];
   cycleTheme?: string;
   companyPriorities: string[];
+  archivedDate?: string;
+  archivedBy?: string;
 }
 
 export interface OKRTemplate {
@@ -262,4 +274,167 @@ export interface AppData {
   templates: MeetingTemplate[];
   sessions: UserSession[];
   events: GameEvent[];
+}
+
+// AI Integration Types
+export interface AIObjectiveSuggestion {
+  id: string;
+  title: string;
+  description: string;
+  category:
+    | "revenue"
+    | "operational"
+    | "customer"
+    | "team"
+    | "compliance"
+    | "innovation";
+  level: "company" | "team" | "individual";
+  suggestedKeyResults: string[];
+  reasoning: string;
+  confidence: number; // AI confidence in suggestion (0-1)
+  industryBased: boolean;
+}
+
+export interface AIKeyResultSuggestion {
+  id: string;
+  description: string;
+  startValue?: number;
+  targetValue?: number;
+  unit: string;
+  reasoning: string;
+  difficulty: "easy" | "medium" | "hard";
+  timeframe: string;
+  dependencies?: string[];
+}
+
+export interface AICheckInAnalysis {
+  id: string;
+  objectiveId: string;
+  overallScore: number; // 0-10
+  progressAnalysis: string;
+  riskAssessment: string;
+  recommendations: string[];
+  confidenceAdjustment?: number;
+  nextStepSuggestions: string[];
+  blockerIdentification?: string[];
+}
+
+export interface AIInsight {
+  id: string;
+  type: "progress" | "risk" | "opportunity" | "recommendation";
+  title: string;
+  description: string;
+  priority: "low" | "medium" | "high" | "critical";
+  objectiveIds: string[];
+  actionItems?: string[];
+  deadline?: string;
+  createdDate: string;
+}
+
+// User Authentication Types
+export interface UserProfile {
+  id: string;
+  email?: string;
+  username: string;
+  firstName?: string;
+  lastName?: string;
+  role: "agent" | "team_lead" | "manager" | "admin";
+  department?: string;
+  team?: string;
+  licenseStates?: string[];
+  hireDate?: string;
+  avatar?: string;
+  preferences: UserPreferences;
+  stats: UserStats;
+}
+
+export interface TeamMember {
+  id: string;
+  userId: string;
+  teamId: string;
+  role: "member" | "lead" | "manager";
+  joinDate: string;
+  permissions: TeamPermission[];
+}
+
+export interface TeamPermission {
+  id: string;
+  action: "view" | "edit" | "delete" | "archive" | "create" | "manage_team";
+  resource: "objectives" | "templates" | "analytics" | "users" | "settings";
+  granted: boolean;
+}
+
+export interface Team {
+  id: string;
+  name: string;
+  description?: string;
+  managerId: string;
+  members: TeamMember[];
+  objectives: string[]; // objective IDs
+  createdDate: string;
+  status: "active" | "archived";
+}
+
+// Archive/Delete Operations
+export interface ArchiveOperation {
+  id: string;
+  userId: string;
+  resourceType: "objective" | "cycle" | "template";
+  resourceId: string;
+  resourceTitle: string;
+  action: "archive" | "restore" | "delete";
+  reason?: string;
+  timestamp: string;
+  canRestore: boolean;
+}
+
+export interface BulkOperation {
+  id: string;
+  userId: string;
+  operation: "archive" | "restore" | "delete" | "update_status";
+  resourceType: "objective" | "cycle" | "template";
+  resourceIds: string[];
+  parameters?: any;
+  timestamp: string;
+  results: {
+    successful: string[];
+    failed: Array<{
+      id: string;
+      error: string;
+    }>;
+  };
+}
+
+// Filter and View Types
+export interface FilterOptions {
+  status?: ("draft" | "active" | "completed" | "cancelled" | "archived")[];
+  category?: (
+    | "revenue"
+    | "operational"
+    | "customer"
+    | "team"
+    | "compliance"
+    | "innovation"
+  )[];
+  level?: ("company" | "team" | "individual")[];
+  owner?: string[];
+  quarter?: string[];
+  year?: number[];
+  dateRange?: {
+    start: string;
+    end: string;
+  };
+  showArchived?: boolean;
+  aiInsights?: boolean;
+}
+
+export interface ViewPreset {
+  id: string;
+  name: string;
+  description: string;
+  filters: FilterOptions;
+  sortBy: string;
+  sortOrder: "asc" | "desc";
+  isDefault?: boolean;
+  userId?: string;
 }
