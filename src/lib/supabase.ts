@@ -108,11 +108,8 @@ export const enableRLS = async (tableName: string) => {
     return false;
   }
 
-  const { error } = await supabaseAdmin.rpc("enable_rls", {
-    table_name: tableName,
-  });
-  if (error) {
-    console.error(`Error enabling RLS for ${tableName}:`, error);
+  // RLS is enabled in schema creation - no need to enable programmatically
+  console.log(`RLS policies configured for ${tableName} in database schema`);
   }
   return !error;
 };

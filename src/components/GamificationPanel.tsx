@@ -586,7 +586,6 @@ export function GamificationPanel({
                     variant="outline"
                     size="sm"
                     className="w-full flex items-center gap-2"
-                    as="span"
                   >
                     <Upload className="h-4 w-4" />
                     Import Data
