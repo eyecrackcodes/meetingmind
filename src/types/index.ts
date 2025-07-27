@@ -67,7 +67,7 @@ export interface Objective {
     | "innovation";
   level: "company" | "team" | "individual";
   owner: string;
-  quarter: string; // e.g., "2024-Q1"
+  quarter: string; // e.g., "2025-Q1"
   year: number;
   keyResults: KeyResult[];
   alignedTo?: string; // Parent objective ID for alignment
@@ -92,7 +92,7 @@ export interface CheckIn {
 
 export interface OKRCycle {
   id: string;
-  name: string; // e.g., "2024 Q1"
+  name: string; // e.g., "2025 Q1"
   quarter: number;
   year: number;
   startDate: string;

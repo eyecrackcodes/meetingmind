@@ -85,7 +85,7 @@ Create a comprehensive meeting template that includes:
 Return ONLY a valid JSON object matching this exact structure:
 {
   "meetingTitle": "string",
-  "meetingDate": "2024-01-01T10:00",
+            "meetingDate": "2025-01-01T10:00",
   "facilitator": "string",
   "coreQuestion": "string",
   "meetingContext": "string",

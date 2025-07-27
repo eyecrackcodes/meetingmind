@@ -37,8 +37,8 @@ export function OKRObjectiveForm({
     category: objective?.category || "operational",
     level: objective?.level || "team",
     owner: objective?.owner || "",
-    quarter: objective?.quarter || "2024-Q1",
-    year: objective?.year || 2024,
+    quarter: objective?.quarter || "2025-Q1",
+    year: objective?.year || 2025,
     confidenceLevel: objective?.confidenceLevel || 5,
     keyResults: objective?.keyResults || [],
   });
@@ -86,10 +86,10 @@ export function OKRObjectiveForm({
   ];
 
   const quarters = [
-    { value: "2024-Q1", label: "2024 Q1" },
-    { value: "2024-Q2", label: "2024 Q2" },
-    { value: "2024-Q3", label: "2024 Q3" },
-    { value: "2024-Q4", label: "2024 Q4" },
+    { value: "2025-Q1", label: "2025 Q1" },
+    { value: "2025-Q2", label: "2025 Q2" },
+    { value: "2025-Q3", label: "2025 Q3" },
+    { value: "2025-Q4", label: "2025 Q4" },
   ];
 
   // Final expense insurance specific templates
