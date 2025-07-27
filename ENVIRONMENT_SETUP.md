@@ -29,7 +29,7 @@ VITE_SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJz
 
 1. **Go to your Supabase project**: https://bqgvqxlqecfgmhwgitts.supabase.co
 2. **Navigate to**: SQL Editor → New Query
-3. **Copy and paste** the entire contents of `database-schema.sql`
+3. **Copy and paste** the entire contents of `supabase-schema.pgsql`
 4. **Run the query** to create all tables, policies, and triggers
 
 ### 3. Start Development

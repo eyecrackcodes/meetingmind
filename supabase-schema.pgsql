@@ -1,19 +1,67 @@
--- MeetingMind Database Schema for Supabase
+-- MeetingMind Database Schema for Supabase (PostgreSQL)
 -- This script creates all tables, relationships, and security policies
-
+-- 
+-- IMPORTANT: This file uses PostgreSQL syntax, not SQL Server
+-- If your IDE shows linter errors, configure it for PostgreSQL or ignore .pgsql files
+--
+-- To execute: Copy and paste this entire script into Supabase SQL Editor
 -- Enable required extensions
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- Create custom types
-CREATE TYPE achievement_category AS ENUM ('objectives', 'key-results', 'check-ins', 'consistency', 'performance', 'collaboration');
-CREATE TYPE achievement_rarity AS ENUM ('common', 'uncommon', 'rare', 'epic', 'legendary');
-CREATE TYPE objective_category AS ENUM ('revenue', 'operational', 'customer', 'team', 'compliance', 'innovation');
-CREATE TYPE objective_level AS ENUM ('company', 'team', 'individual');
-CREATE TYPE objective_status AS ENUM ('draft', 'active', 'completed', 'cancelled', 'archived');
-CREATE TYPE cycle_status AS ENUM ('planning', 'active', 'review', 'completed', 'archived');
-CREATE TYPE game_event_type AS ENUM ('achievement_unlocked', 'level_up', 'streak_milestone', 'objective_completed', 'milestone_reached');
-CREATE TYPE theme_type AS ENUM ('light', 'dark', 'auto');
-CREATE TYPE default_view_type AS ENUM ('meetings', 'okr');
+-- Create lookup tables for enums
+CREATE TABLE achievement_category (
+    category TEXT PRIMARY KEY CHECK (category IN ('objectives', 'key-results', 'check-ins', 'consistency', 'performance', 'collaboration'))
+);
+INSERT INTO achievement_category (category) VALUES
+    ('objectives'), ('key-results'), ('check-ins'), ('consistency'), ('performance'), ('collaboration');
+
+CREATE TABLE achievement_rarity (
+    rarity TEXT PRIMARY KEY CHECK (rarity IN ('common', 'uncommon', 'rare', 'epic', 'legendary'))
+);
+INSERT INTO achievement_rarity (rarity) VALUES
+    ('common'), ('uncommon'), ('rare'), ('epic'), ('legendary');
+
+CREATE TABLE objective_category (
+    category TEXT PRIMARY KEY CHECK (category IN ('revenue', 'operational', 'customer', 'team', 'compliance', 'innovation'))
+);
+INSERT INTO objective_category (category) VALUES
+    ('revenue'), ('operational'), ('customer'), ('team'), ('compliance'), ('innovation');
+
+CREATE TABLE objective_level (
+    level TEXT PRIMARY KEY CHECK (level IN ('company', 'team', 'individual'))
+);
+INSERT INTO objective_level (level) VALUES
+    ('company'), ('team'), ('individual');
+CREATE TABLE objective_status (
+    status TEXT PRIMARY KEY CHECK (status IN ('draft', 'active', 'completed', 'cancelled', 'archived'))
+);
+INSERT INTO objective_status (status) VALUES 
+    ('draft'), ('active'), ('completed'), ('cancelled'), ('archived');
+
+CREATE TABLE cycle_status (
+    status TEXT PRIMARY KEY CHECK (status IN ('planning', 'active', 'review', 'completed', 'archived'))
+);
+INSERT INTO cycle_status (status) VALUES
+    ('planning'), ('active'), ('review'), ('completed'), ('archived');
+
+CREATE TABLE game_event_type (
+    event_type TEXT PRIMARY KEY CHECK (event_type IN ('achievement_unlocked', 'level_up', 'streak_milestone', 'objective_completed', 'milestone_reached'))
+);
+INSERT INTO game_event_type (event_type) VALUES
+    ('achievement_unlocked'), ('level_up'), ('streak_milestone'), ('objective_completed'), ('milestone_reached');
+
+CREATE TABLE theme_type (
+    theme TEXT PRIMARY KEY CHECK (theme IN ('light', 'dark', 'auto'))
+);
+INSERT INTO theme_type (theme) VALUES
+    ('light'), ('dark'), ('auto');
+
+CREATE TABLE default_view_type (
+    view_type TEXT PRIMARY KEY CHECK (view_type IN ('meetings', 'okr'))
+);
+INSERT INTO default_view_type (view_type) VALUES
+    ('meetings'), ('okr');
 
 -- User Stats Table (Enhanced with Profile Fields)
 CREATE TABLE user_stats (
