@@ -10,7 +10,7 @@ import {
   GameEvent,
   Achievement,
 } from "@/types";
-import { supabase, getCurrentUser, signInAnonymously } from "./supabase";
+import { supabase } from "./supabase";
 
 const APP_VERSION = "1.0.0";
 
@@ -50,27 +50,29 @@ export class SupabaseDataService {
   }
 
   constructor() {
-    this.initializeUser();
-    this.initializeAutoSave();
+    // Auto-save will be initialized when user authenticates
+    // No automatic user initialization - handled by auth flow
   }
 
-  // Initialize user and start session
-  private async initializeUser() {
+  // Initialize user and start session (called after authentication)
+  async initializeAuthenticatedUser(user: any) {
     try {
-      let user = await getCurrentUser();
-
-      if (!user) {
-        // Sign in anonymously for first-time users
-        user = await signInAnonymously();
-      }
-
-      if (user) {
-        this.currentUser = user;
-        await this.ensureUserDataExists(user.id);
-        await this.startSession();
-      }
+      this.currentUser = user;
+      await this.ensureUserDataExists(user.id);
+      await this.startSession();
+      this.initializeAutoSave();
     } catch (error) {
-      console.error("Error initializing user:", error);
+      console.error("Error initializing authenticated user:", error);
+    }
+  }
+
+  // Clear user data on sign out
+  clearUserData() {
+    this.currentUser = null;
+    this.currentSession = null;
+    if (this.autoSaveInterval) {
+      clearInterval(this.autoSaveInterval);
+      this.autoSaveInterval = null;
     }
   }
 

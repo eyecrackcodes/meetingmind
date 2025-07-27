@@ -313,6 +313,9 @@ function App() {
     setCurrentUser(user);
 
     if (user) {
+      // Initialize data service for authenticated user
+      await dataService.initializeAuthenticatedUser(user);
+
       // Load user profile and stats when user signs in
       try {
         const profile = await loadUserProfile(user.id);
@@ -349,12 +352,13 @@ function App() {
         setUserStats(null);
       }
     } else {
-      // User signed out
+      // User signed out - clear everything
       setUserProfile(null);
       setUserStats(null);
       setObjectives([]);
       setTemplates([]);
       setCycles([]);
+      dataService.clearUserData();
     }
   };
 
