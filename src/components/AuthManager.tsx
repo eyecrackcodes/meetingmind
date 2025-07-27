@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,13 +14,10 @@ import {
   UserPlus,
   Shield,
   Users,
-  Settings,
   Crown,
   Star,
   Building,
-  MapPin,
   Calendar,
-  Phone,
   Edit,
   Save,
   X,
@@ -32,9 +29,8 @@ import {
   signInWithEmail,
   signUpWithEmail,
   signOut,
-  getCurrentUser,
 } from "@/lib/supabase";
-import { UserProfile, Team, TeamMember } from "@/types";
+import { UserProfile } from "@/types";
 
 interface AuthManagerProps {
   currentUser: any;
