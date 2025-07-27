@@ -1,13 +1,19 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 
-// Supabase configuration
-const supabaseUrl =
-  import.meta.env.VITE_SUPABASE_URL ||
-  "https://bqgvqxlqecfgmhwgitts.supabase.co";
-const supabaseAnonKey =
-  import.meta.env.VITE_SUPABASE_ANON_KEY ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJxZ3ZxeGxxZWNmZ21od2dpdHRzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM2NTI0OTksImV4cCI6MjA2OTIyODQ5OX0.whj16FT-G8uvo-9xiUVHToLeSJPawi8K1URZW-Wy8II";
+// Supabase configuration from environment variables
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+
+// Validate required environment variables
+if (!supabaseUrl) {
+  throw new Error("Missing VITE_SUPABASE_URL environment variable");
+}
+
+if (!supabaseAnonKey) {
+  throw new Error("Missing VITE_SUPABASE_ANON_KEY environment variable");
+}
 
 // Create Supabase client
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
@@ -24,20 +30,14 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
 });
 
 // Service role client for admin operations (use carefully)
-const supabaseServiceKey =
-  import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJxZ3ZxeGxxZWNmZ21od2dpdHRzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MzY1MjQ5OSwiZXhwIjoyMDY5MjI4NDk5fQ.Stsq9OoGigStgyuaAbZx3PI4R3yuxshGFBty4fukZLY";
-
-export const supabaseAdmin = createClient<Database>(
-  supabaseUrl,
-  supabaseServiceKey,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  }
-);
+export const supabaseAdmin = supabaseServiceKey
+  ? createClient<Database>(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    })
+  : null;
 
 // Authentication helpers
 export const getCurrentUser = async () => {
@@ -103,6 +103,11 @@ export const signOut = async () => {
 
 // Database helpers
 export const enableRLS = async (tableName: string) => {
+  if (!supabaseAdmin) {
+    console.warn("Admin client not available - service role key not provided");
+    return false;
+  }
+
   const { error } = await supabaseAdmin.rpc("enable_rls", {
     table_name: tableName,
   });
@@ -156,8 +161,8 @@ export const subscribeToUserData = (
 export const checkConnection = async () => {
   try {
     const { data, error } = await supabase
-      .from("healthcheck")
-      .select("*")
+      .from("user_stats")
+      .select("id")
       .limit(1);
     return !error;
   } catch (error) {
@@ -169,6 +174,15 @@ export const checkConnection = async () => {
 // Initialize connection and auth state
 export const initializeSupabase = async () => {
   try {
+    // Validate connection first
+    const isConnected = await checkConnection();
+    if (!isConnected) {
+      console.error(
+        "Failed to connect to Supabase. Please check your configuration."
+      );
+      return false;
+    }
+
     // Check if user is already authenticated
     const {
       data: { session },
