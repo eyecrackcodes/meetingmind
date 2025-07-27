@@ -347,8 +347,54 @@ export interface UserProfile {
   licenseStates?: string[];
   hireDate?: string;
   avatar?: string;
+
+  // Approval System Fields
+  approvalStatus: "pending" | "approved" | "rejected" | "suspended";
+  approvedBy?: string;
+  approvedAt?: string;
+  rejectionReason?: string;
+  approvalNotes?: string;
+
   preferences: UserPreferences;
   stats: UserStats;
+}
+
+// User Approval System Types
+export interface UserApprovalRequest {
+  id: string;
+  userId: string;
+  email: string;
+  username: string;
+  firstName?: string;
+  lastName?: string;
+  department?: string;
+  team?: string;
+  requestedRole: "agent" | "team_lead" | "manager" | "admin";
+  submittedAt: string;
+  status: "pending" | "approved" | "rejected" | "suspended";
+  reviewedBy?: string;
+  reviewedAt?: string;
+  rejectionReason?: string;
+  notes?: string;
+}
+
+export interface UserApprovalAction {
+  userId: string;
+  action: "approve" | "reject" | "suspend" | "reactivate";
+  reason?: string;
+  notes?: string;
+  newRole?: "agent" | "team_lead" | "manager" | "admin";
+}
+
+export interface ApprovalHistory {
+  id: string;
+  userId: string;
+  action: "submitted" | "approved" | "rejected" | "suspended" | "reactivated";
+  performedBy?: string;
+  reason?: string;
+  notes?: string;
+  metadata?: Record<string, any>;
+  createdAt: string;
 }
 
 export interface TeamMember {

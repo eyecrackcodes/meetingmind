@@ -63,11 +63,19 @@ CREATE TABLE default_view_type (
 INSERT INTO default_view_type (view_type) VALUES
     ('meetings'), ('okr');
 
--- User Stats Table (Enhanced with Profile Fields)
+-- User Approval Status Lookup Table
+CREATE TABLE user_approval_status (
+    status TEXT PRIMARY KEY CHECK (status IN ('pending', 'approved', 'rejected', 'suspended'))
+);
+INSERT INTO user_approval_status (status) VALUES
+    ('pending'), ('approved'), ('rejected'), ('suspended');
+
+-- User Stats Table (Enhanced with Profile Fields + Approval System)
 CREATE TABLE user_stats (
     id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     username TEXT NOT NULL DEFAULT 'User',
+    email TEXT, -- Store email for easier admin management
     first_name TEXT,
     last_name TEXT,
     role TEXT DEFAULT 'agent' CHECK (role IN ('agent', 'team_lead', 'manager', 'admin')),
@@ -76,6 +84,15 @@ CREATE TABLE user_stats (
     license_states TEXT[],
     hire_date DATE,
     avatar TEXT,
+    
+    -- Approval System Fields
+    approval_status TEXT DEFAULT 'pending' REFERENCES user_approval_status(status),
+    approved_by UUID REFERENCES auth.users(id),
+    approved_at TIMESTAMPTZ,
+    rejection_reason TEXT,
+    approval_notes TEXT,
+    
+    -- Gamification Fields
     level INTEGER DEFAULT 1,
     total_points INTEGER DEFAULT 0,
     current_streak INTEGER DEFAULT 0,
@@ -94,6 +111,18 @@ CREATE TABLE user_stats (
     }'::jsonb,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- User Approval History Table (Track all approval actions)
+CREATE TABLE user_approval_history (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    action TEXT NOT NULL CHECK (action IN ('submitted', 'approved', 'rejected', 'suspended', 'reactivated')),
+    performed_by UUID REFERENCES auth.users(id),
+    reason TEXT,
+    notes TEXT,
+    metadata JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Achievements Table
@@ -214,6 +243,12 @@ CREATE TABLE user_preferences (
 
 -- Create indexes for better performance
 CREATE INDEX idx_user_stats_user_id ON user_stats(user_id);
+CREATE INDEX idx_user_stats_approval_status ON user_stats(approval_status);
+CREATE INDEX idx_user_stats_role ON user_stats(role);
+CREATE INDEX idx_user_stats_email ON user_stats(email);
+CREATE INDEX idx_user_approval_history_user_id ON user_approval_history(user_id);
+CREATE INDEX idx_user_approval_history_action ON user_approval_history(action);
+CREATE INDEX idx_user_approval_history_performed_by ON user_approval_history(performed_by);
 CREATE INDEX idx_achievements_user_id ON achievements(user_id);
 CREATE INDEX idx_achievements_category ON achievements(category);
 CREATE INDEX idx_achievements_rarity ON achievements(rarity);
@@ -246,90 +281,139 @@ ALTER TABLE user_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE game_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_preferences ENABLE ROW LEVEL SECURITY;
 
+-- Helper function to check if user is admin
+CREATE OR REPLACE FUNCTION is_admin(user_uuid UUID DEFAULT auth.uid())
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1 FROM user_stats 
+        WHERE user_id = user_uuid 
+        AND role = 'admin' 
+        AND approval_status = 'approved'
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Helper function to check if user is approved
+CREATE OR REPLACE FUNCTION is_approved(user_uuid UUID DEFAULT auth.uid())
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN EXISTS (
+        SELECT 1 FROM user_stats 
+        WHERE user_id = user_uuid 
+        AND approval_status = 'approved'
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- RLS Policies
 
 -- User Stats Policies
 CREATE POLICY "Users can view their own stats" ON user_stats
     FOR SELECT USING (auth.uid() = user_id);
 
+CREATE POLICY "Admins can view all user stats" ON user_stats
+    FOR SELECT USING (is_admin());
+
 CREATE POLICY "Users can insert their own stats" ON user_stats
     FOR INSERT WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Users can update their own stats" ON user_stats
-    FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can update their own basic info" ON user_stats
+    FOR UPDATE USING (
+        auth.uid() = user_id 
+        AND approval_status = 'approved'
+    );
 
--- Achievements Policies
-CREATE POLICY "Users can view their own achievements" ON achievements
+CREATE POLICY "Admins can update any user stats" ON user_stats
+    FOR UPDATE USING (is_admin());
+
+-- Achievements Policies (Only for approved users)
+CREATE POLICY "Approved users can view their own achievements" ON achievements
+    FOR SELECT USING (auth.uid() = user_id AND is_approved());
+
+CREATE POLICY "Approved users can insert their own achievements" ON achievements
+    FOR INSERT WITH CHECK (auth.uid() = user_id AND is_approved());
+
+-- Objectives Policies (Only for approved users)
+CREATE POLICY "Approved users can view their own objectives" ON objectives
+    FOR SELECT USING (auth.uid() = user_id AND is_approved());
+
+CREATE POLICY "Approved users can insert their own objectives" ON objectives
+    FOR INSERT WITH CHECK (auth.uid() = user_id AND is_approved());
+
+CREATE POLICY "Approved users can update their own objectives" ON objectives
+    FOR UPDATE USING (auth.uid() = user_id AND is_approved());
+
+CREATE POLICY "Approved users can delete their own objectives" ON objectives
+    FOR DELETE USING (auth.uid() = user_id AND is_approved());
+
+-- OKR Cycles Policies (Only for approved users)
+CREATE POLICY "Approved users can view their own cycles" ON okr_cycles
+    FOR SELECT USING (auth.uid() = user_id AND is_approved());
+
+CREATE POLICY "Approved users can insert their own cycles" ON okr_cycles
+    FOR INSERT WITH CHECK (auth.uid() = user_id AND is_approved());
+
+CREATE POLICY "Approved users can update their own cycles" ON okr_cycles
+    FOR UPDATE USING (auth.uid() = user_id AND is_approved());
+
+CREATE POLICY "Approved users can delete their own cycles" ON okr_cycles
+    FOR DELETE USING (auth.uid() = user_id AND is_approved());
+
+-- Meeting Templates Policies (Only for approved users)
+CREATE POLICY "Approved users can view their own templates" ON meeting_templates
+    FOR SELECT USING (auth.uid() = user_id AND is_approved());
+
+CREATE POLICY "Approved users can insert their own templates" ON meeting_templates
+    FOR INSERT WITH CHECK (auth.uid() = user_id AND is_approved());
+
+CREATE POLICY "Approved users can update their own templates" ON meeting_templates
+    FOR UPDATE USING (auth.uid() = user_id AND is_approved());
+
+CREATE POLICY "Approved users can delete their own templates" ON meeting_templates
+    FOR DELETE USING (auth.uid() = user_id AND is_approved());
+
+-- User Sessions Policies (Only for approved users)
+CREATE POLICY "Approved users can view their own sessions" ON user_sessions
+    FOR SELECT USING (auth.uid() = user_id AND is_approved());
+
+CREATE POLICY "Approved users can insert their own sessions" ON user_sessions
+    FOR INSERT WITH CHECK (auth.uid() = user_id AND is_approved());
+
+CREATE POLICY "Approved users can update their own sessions" ON user_sessions
+    FOR UPDATE USING (auth.uid() = user_id AND is_approved());
+
+-- Game Events Policies (Only for approved users)
+CREATE POLICY "Approved users can view their own events" ON game_events
+    FOR SELECT USING (auth.uid() = user_id AND is_approved());
+
+CREATE POLICY "Approved users can insert their own events" ON game_events
+    FOR INSERT WITH CHECK (auth.uid() = user_id AND is_approved());
+
+-- User Preferences Policies (Only for approved users)
+CREATE POLICY "Approved users can view their own preferences" ON user_preferences
+    FOR SELECT USING (auth.uid() = user_id AND is_approved());
+
+CREATE POLICY "Approved users can insert their own preferences" ON user_preferences
+    FOR INSERT WITH CHECK (auth.uid() = user_id AND is_approved());
+
+CREATE POLICY "Approved users can update their own preferences" ON user_preferences
+    FOR UPDATE USING (auth.uid() = user_id AND is_approved());
+
+-- User Approval History Policies
+ALTER TABLE user_approval_history ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own approval history" ON user_approval_history
     FOR SELECT USING (auth.uid() = user_id);
 
-CREATE POLICY "Users can insert their own achievements" ON achievements
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Admins can view all approval history" ON user_approval_history
+    FOR SELECT USING (is_admin());
 
--- Objectives Policies
-CREATE POLICY "Users can view their own objectives" ON objectives
-    FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Admins can insert approval history" ON user_approval_history
+    FOR INSERT WITH CHECK (is_admin());
 
-CREATE POLICY "Users can insert their own objectives" ON objectives
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own objectives" ON objectives
-    FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own objectives" ON objectives
-    FOR DELETE USING (auth.uid() = user_id);
-
--- OKR Cycles Policies
-CREATE POLICY "Users can view their own cycles" ON okr_cycles
-    FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert their own cycles" ON okr_cycles
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own cycles" ON okr_cycles
-    FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own cycles" ON okr_cycles
-    FOR DELETE USING (auth.uid() = user_id);
-
--- Meeting Templates Policies
-CREATE POLICY "Users can view their own templates" ON meeting_templates
-    FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert their own templates" ON meeting_templates
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own templates" ON meeting_templates
-    FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own templates" ON meeting_templates
-    FOR DELETE USING (auth.uid() = user_id);
-
--- User Sessions Policies
-CREATE POLICY "Users can view their own sessions" ON user_sessions
-    FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert their own sessions" ON user_sessions
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own sessions" ON user_sessions
-    FOR UPDATE USING (auth.uid() = user_id);
-
--- Game Events Policies
-CREATE POLICY "Users can view their own events" ON game_events
-    FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert their own events" ON game_events
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
-
--- User Preferences Policies
-CREATE POLICY "Users can view their own preferences" ON user_preferences
-    FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert their own preferences" ON user_preferences
-    FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own preferences" ON user_preferences
-    FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "System can insert approval history" ON user_approval_history
+    FOR INSERT WITH CHECK (true); -- Allow system to log approval actions
 
 -- Create triggers for updated_at timestamps
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -349,26 +433,108 @@ CREATE TRIGGER update_objectives_updated_at BEFORE UPDATE ON objectives
 CREATE TRIGGER update_okr_cycles_updated_at BEFORE UPDATE ON okr_cycles
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+-- Function to handle user approval status changes and log history
+CREATE OR REPLACE FUNCTION handle_approval_status_change()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Only log if approval_status actually changed
+    IF OLD.approval_status IS DISTINCT FROM NEW.approval_status THEN
+        INSERT INTO user_approval_history (
+            user_id,
+            action,
+            performed_by,
+            reason,
+            notes,
+            metadata
+        ) VALUES (
+            NEW.user_id,
+            NEW.approval_status,
+            NEW.approved_by,
+            NEW.rejection_reason,
+            NEW.approval_notes,
+            jsonb_build_object(
+                'old_status', OLD.approval_status,
+                'new_status', NEW.approval_status,
+                'timestamp', NOW()
+            )
+        );
+        
+        -- Set approved_at timestamp when approved
+        IF NEW.approval_status = 'approved' AND OLD.approval_status != 'approved' THEN
+            NEW.approved_at = NOW();
+        END IF;
+    END IF;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER trigger_approval_status_change 
+    BEFORE UPDATE ON user_stats
+    FOR EACH ROW EXECUTE FUNCTION handle_approval_status_change();
+
 CREATE TRIGGER update_meeting_templates_updated_at BEFORE UPDATE ON meeting_templates
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_user_preferences_updated_at BEFORE UPDATE ON user_preferences
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
--- Create function to initialize user data
+-- Create function to initialize user data with approval system
 CREATE OR REPLACE FUNCTION initialize_user_data()
 RETURNS TRIGGER AS $$
+DECLARE
+    extracted_email TEXT;
+    extracted_username TEXT;
 BEGIN
-    -- Create user stats record
-    INSERT INTO user_stats (user_id, username)
+    -- Extract email and username from auth data
+    extracted_email := NEW.email;
+    extracted_username := COALESCE(
+        NEW.raw_user_meta_data->>'username',
+        NEW.raw_user_meta_data->>'full_name',
+        split_part(NEW.email, '@', 1),
+        'User'
+    );
+    
+    -- Create user stats record with pending approval
+    INSERT INTO user_stats (
+        user_id, 
+        username, 
+        email,
+        approval_status,
+        first_name,
+        last_name
+    )
     VALUES (
         NEW.id,
-        COALESCE(NEW.raw_user_meta_data->>'username', 'User')
+        extracted_username,
+        extracted_email,
+        'pending',
+        NEW.raw_user_meta_data->>'first_name',
+        NEW.raw_user_meta_data->>'last_name'
     );
     
     -- Create user preferences record
     INSERT INTO user_preferences (user_id)
     VALUES (NEW.id);
+    
+    -- Log the initial signup in approval history
+    INSERT INTO user_approval_history (
+        user_id,
+        action,
+        performed_by,
+        notes,
+        metadata
+    ) VALUES (
+        NEW.id,
+        'submitted',
+        NEW.id,
+        'User signed up and pending approval',
+        jsonb_build_object(
+            'email', extracted_email,
+            'username', extracted_username,
+            'signup_timestamp', NOW()
+        )
+    );
     
     RETURN NEW;
 END;

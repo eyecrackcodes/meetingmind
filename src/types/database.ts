@@ -14,6 +14,20 @@ export interface Database {
           id: string;
           user_id: string;
           username: string;
+          email: string | null;
+          first_name: string | null;
+          last_name: string | null;
+          role: string;
+          department: string | null;
+          team: string | null;
+          license_states: string[] | null;
+          hire_date: string | null;
+          avatar: string | null;
+          approval_status: string;
+          approved_by: string | null;
+          approved_at: string | null;
+          rejection_reason: string | null;
+          approval_notes: string | null;
           level: number;
           total_points: number;
           current_streak: number;
@@ -37,6 +51,20 @@ export interface Database {
           id?: string;
           user_id: string;
           username: string;
+          email?: string | null;
+          first_name?: string | null;
+          last_name?: string | null;
+          role?: string;
+          department?: string | null;
+          team?: string | null;
+          license_states?: string[] | null;
+          hire_date?: string | null;
+          avatar?: string | null;
+          approval_status?: string;
+          approved_by?: string | null;
+          approved_at?: string | null;
+          rejection_reason?: string | null;
+          approval_notes?: string | null;
           level?: number;
           total_points?: number;
           current_streak?: number;
@@ -60,6 +88,20 @@ export interface Database {
           id?: string;
           user_id?: string;
           username?: string;
+          email?: string | null;
+          first_name?: string | null;
+          last_name?: string | null;
+          role?: string;
+          department?: string | null;
+          team?: string | null;
+          license_states?: string[] | null;
+          hire_date?: string | null;
+          avatar?: string | null;
+          approval_status?: string;
+          approved_by?: string | null;
+          approved_at?: string | null;
+          rejection_reason?: string | null;
+          approval_notes?: string | null;
           level?: number;
           total_points?: number;
           current_streak?: number;
@@ -83,6 +125,52 @@ export interface Database {
           {
             foreignKeyName: "user_stats_user_id_fkey";
             columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      user_approval_history: {
+        Row: {
+          id: string;
+          user_id: string;
+          action: string;
+          performed_by: string | null;
+          reason: string | null;
+          notes: string | null;
+          metadata: Json | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          action: string;
+          performed_by?: string | null;
+          reason?: string | null;
+          notes?: string | null;
+          metadata?: Json | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          action?: string;
+          performed_by?: string | null;
+          reason?: string | null;
+          notes?: string | null;
+          metadata?: Json | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "user_approval_history_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_approval_history_performed_by_fkey";
+            columns: ["performed_by"];
             referencedRelation: "users";
             referencedColumns: ["id"];
           }

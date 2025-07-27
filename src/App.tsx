@@ -42,7 +42,7 @@ import {
 } from "lucide-react";
 import { SupabaseDataService } from "@/lib/supabaseDataService";
 import { GamificationService } from "@/lib/gamificationService";
-import { initializeSupabase } from "@/lib/supabase";
+import { initializeSupabase, supabase } from "@/lib/supabase";
 import React from "react";
 
 type AppView =
@@ -81,7 +81,7 @@ function App() {
   const dataService = SupabaseDataService.getInstance();
   const gamificationService = GamificationService.getInstance();
 
-  // Initialize app and load data
+  // Initialize app and auth state listening
   useEffect(() => {
     const initializeApp = async () => {
       try {
@@ -90,6 +90,27 @@ function App() {
         if (!isConnected) {
           console.error("Failed to connect to Supabase");
           return;
+        }
+
+        // Set up auth state listener
+        const {
+          data: { subscription },
+        } = supabase.auth.onAuthStateChange(
+          async (event: any, session: any) => {
+            if (event === "SIGNED_IN" && session?.user) {
+              await handleAuthStateChange(session.user);
+            } else if (event === "SIGNED_OUT") {
+              await handleAuthStateChange(null);
+            }
+          }
+        );
+
+        // Check current auth state
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (session?.user) {
+          await handleAuthStateChange(session.user);
         }
 
         // Load API key from environment or localStorage
@@ -102,8 +123,10 @@ function App() {
           setApiKey(localApiKey);
         }
 
-        // Load all data
-        await loadAppData();
+        // Cleanup function
+        return () => {
+          subscription.unsubscribe();
+        };
       } catch (error) {
         console.error("Error initializing app:", error);
       }
@@ -286,24 +309,65 @@ function App() {
   };
 
   // Authentication handlers
-  const handleAuthStateChange = (user: any, profile: UserProfile | null) => {
+  const handleAuthStateChange = async (user: any) => {
     setCurrentUser(user);
-    setUserProfile(profile);
-    if (user && profile) {
-      // Convert UserProfile to UserStats if needed
-      const stats: UserStats = {
-        id: profile.id,
-        username: profile.username,
-        level: profile.stats.level,
-        totalPoints: profile.stats.totalPoints,
-        currentStreak: profile.stats.currentStreak,
-        longestStreak: profile.stats.longestStreak,
-        joinDate: profile.stats.joinDate,
-        lastActive: profile.stats.lastActive,
-        achievements: profile.stats.achievements,
-        stats: profile.stats.stats,
-      };
-      setUserStats(stats);
+
+    if (user) {
+      // Load user profile and stats when user signs in
+      try {
+        const profile = await loadUserProfile(user.id);
+        setUserProfile(profile);
+
+        if (profile && profile.approvalStatus === "approved") {
+          // Convert UserProfile to UserStats for approved users
+          const stats: UserStats = {
+            id: profile.id,
+            username: profile.username,
+            level: profile.stats.level,
+            totalPoints: profile.stats.totalPoints,
+            currentStreak: profile.stats.currentStreak,
+            longestStreak: profile.stats.longestStreak,
+            joinDate: profile.stats.joinDate,
+            lastActive: profile.stats.lastActive,
+            achievements: profile.stats.achievements,
+            stats: profile.stats.stats,
+          };
+          setUserStats(stats);
+
+          // Load app data for approved users
+          await loadAppData();
+        } else {
+          // Clear app data for non-approved users
+          setUserStats(null);
+          setObjectives([]);
+          setTemplates([]);
+          setCycles([]);
+        }
+      } catch (error) {
+        console.error("Error loading user profile:", error);
+        setUserProfile(null);
+        setUserStats(null);
+      }
+    } else {
+      // User signed out
+      setUserProfile(null);
+      setUserStats(null);
+      setObjectives([]);
+      setTemplates([]);
+      setCycles([]);
+    }
+  };
+
+  const loadUserProfile = async (
+    userId: string
+  ): Promise<UserProfile | null> => {
+    try {
+      // Use the dataService to get user profile with approval status
+      const profile = await dataService.getUserProfile(userId);
+      return profile;
+    } catch (error) {
+      console.error("Error loading user profile:", error);
+      return null;
     }
   };
 
@@ -516,10 +580,52 @@ function App() {
     );
   };
 
+  // Check if user is authenticated and approved
+  const isAuthenticated = currentUser && userProfile;
+  const isApproved = userProfile?.approvalStatus === "approved";
+
+  // Show authentication flow for unauthenticated users or users awaiting approval
+  if (!isAuthenticated || !isApproved) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <AuthManager
+          currentUser={currentUser}
+          userProfile={userProfile}
+          onAuthStateChange={handleAuthStateChange}
+          onProfileUpdate={handleProfileUpdate}
+        />
+      </div>
+    );
+  }
+
+  // Main application for approved users
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <Header />
+
+        {/* User Profile Indicator */}
+        <div className="flex items-center justify-between bg-white rounded-lg shadow-sm p-4 mb-8">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+              <User className="h-4 w-4 text-blue-600" />
+            </div>
+            <div>
+              <h3 className="font-medium">
+                Welcome, {userProfile.firstName || userProfile.username}!
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {userProfile.role.replace("_", " ")} •{" "}
+                {userProfile.department || "No Department"}
+              </p>
+            </div>
+          </div>
+          {userProfile.role === "admin" && (
+            <div className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">
+              Admin Access
+            </div>
+          )}
+        </div>
 
         {/* Main Navigation */}
         <div className="mb-8">
@@ -688,16 +794,6 @@ function App() {
             onObjectiveSuggestion={handleObjectiveSuggestion}
             onKeyResultSuggestion={handleKeyResultSuggestion}
             onAnalysisComplete={handleAnalysisComplete}
-          />
-        )}
-
-        {/* Authentication View */}
-        {currentView === "auth" && (
-          <AuthManager
-            currentUser={currentUser}
-            userProfile={userProfile}
-            onAuthStateChange={handleAuthStateChange}
-            onProfileUpdate={handleProfileUpdate}
           />
         )}
 

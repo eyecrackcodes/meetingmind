@@ -1,6 +1,7 @@
 import {
   AppData,
   UserStats,
+  UserProfile,
   UserPreferences,
   UserSession,
   SessionActivity,
@@ -211,6 +212,85 @@ export class SupabaseDataService {
       };
     } catch (error) {
       console.error("Error getting user stats:", error);
+      return null;
+    }
+  }
+
+  async getUserProfile(userId?: string): Promise<UserProfile | null> {
+    const targetUserId = userId || this.currentUser?.id;
+    if (!targetUserId) return null;
+
+    try {
+      const { data, error } = await supabase
+        .from("user_stats")
+        .select("*")
+        .eq("user_id", targetUserId)
+        .single();
+
+      if (error) {
+        console.error("Error fetching user profile:", error);
+        return null;
+      }
+
+      // Transform database data to UserProfile format
+      return {
+        id: data.id,
+        email: data.email,
+        username: data.username,
+        firstName: data.first_name,
+        lastName: data.last_name,
+        role: data.role,
+        department: data.department,
+        team: data.team,
+        licenseStates: data.license_states || [],
+        hireDate: data.hire_date,
+        avatar: data.avatar,
+        approvalStatus: data.approval_status,
+        approvedBy: data.approved_by,
+        approvedAt: data.approved_at,
+        rejectionReason: data.rejection_reason,
+        approvalNotes: data.approval_notes,
+        preferences: {
+          theme: "auto",
+          notifications: {
+            achievements: true,
+            reminders: true,
+            deadlines: true,
+            weekly_summary: true,
+          },
+          gamification: {
+            enabled: true,
+            showLeaderboards: true,
+            showPoints: true,
+            showAchievements: true,
+          },
+          defaultView: "meetings",
+          autoSave: true,
+        },
+        stats: {
+          id: data.id,
+          username: data.username,
+          level: data.level,
+          totalPoints: data.total_points,
+          currentStreak: data.current_streak,
+          longestStreak: data.longest_streak,
+          joinDate: data.join_date,
+          lastActive: data.last_active,
+          achievements: [],
+          stats: {
+            objectivesCreated: data.stats?.objectives_created || 0,
+            objectivesCompleted: data.stats?.objectives_completed || 0,
+            keyResultsAchieved: data.stats?.key_results_achieved || 0,
+            checkInsCompleted: data.stats?.check_ins_completed || 0,
+            avgConfidenceLevel: data.stats?.avg_confidence_level || 0,
+            avgProgressRate: data.stats?.avg_progress_rate || 0,
+            totalSessions: data.stats?.total_sessions || 0,
+            totalTimeSpent: data.stats?.total_time_spent || 0,
+          },
+        },
+      } as UserProfile;
+    } catch (error) {
+      console.error("Error getting user profile:", error);
       return null;
     }
   }
