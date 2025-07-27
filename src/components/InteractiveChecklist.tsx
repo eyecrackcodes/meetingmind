@@ -17,7 +17,7 @@ import {
   HelpCircle,
   FileText,
 } from "lucide-react";
-import { MeetingTemplate, ChecklistItem } from "@/types";
+import { MeetingTemplate } from "@/types";
 import { formatDate } from "@/lib/utils";
 
 interface InteractiveChecklistProps {

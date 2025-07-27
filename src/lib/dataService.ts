@@ -420,7 +420,7 @@ export class DataService {
       this.createBackup();
 
       // Merge with existing data
-      const currentData = this.loadAppData();
+      // const currentData = this.loadAppData(); // Commented out as currently unused
       const mergedData: AppData = {
         ...importedData,
         version: APP_VERSION,

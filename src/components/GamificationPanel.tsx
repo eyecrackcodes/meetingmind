@@ -7,24 +7,18 @@ import {
   Trophy,
   Star,
   Flame,
-  Calendar,
   Award,
   TrendingUp,
   Users,
   Clock,
   Target,
   Zap,
-  Gift,
   Crown,
-  ChevronRight,
   Download,
   Upload,
 } from "lucide-react";
 import { UserStats, Achievement, GameEvent } from "@/types";
-import {
-  GamificationService,
-  LEVEL_THRESHOLDS,
-} from "@/lib/gamificationService";
+import { GamificationService } from "@/lib/gamificationService";
 import { DataService } from "@/lib/dataService";
 
 interface GamificationPanelProps {
