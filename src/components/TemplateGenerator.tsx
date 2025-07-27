@@ -199,7 +199,17 @@ Make it specific to final expense insurance operations and include critical thin
             throw new Error("Generated template is missing required fields");
           }
 
-          onGenerate(template);
+          // Add metadata for the new template structure
+          const enhancedTemplate: MeetingTemplate = {
+            ...template,
+            id: `template_${Date.now()}`,
+            status: "active",
+            createdDate: new Date().toISOString(),
+            tags: ["ai-generated"],
+            usageCount: 0,
+          };
+
+          onGenerate(enhancedTemplate);
           return; // Success - exit the function
         } catch (error) {
           lastError = error as Error;

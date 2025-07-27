@@ -240,7 +240,10 @@ export interface SessionActivity {
     | "objective_updated"
     | "check_in_completed"
     | "meeting_completed"
-    | "template_generated";
+    | "template_generated"
+    | "ai_suggestion_used"
+    | "archive_operation"
+    | "bulk_operation";
   timestamp: string;
   data: any;
   pointsEarned: number;

@@ -4,6 +4,13 @@ import {
   Objective,
   UserStats,
   SessionActivity,
+  UserProfile,
+  ArchiveOperation,
+  BulkOperation,
+  AIObjectiveSuggestion,
+  AIKeyResultSuggestion,
+  AICheckInAnalysis,
+  OKRCycle,
 } from "@/types";
 import { Header } from "@/components/Header";
 import { FrameworkPanel } from "@/components/FrameworkPanel";
@@ -17,18 +24,37 @@ import { AICoachingPanel } from "@/components/AICoachingPanel";
 import { OKRDashboard } from "@/components/OKRDashboard";
 import { OKRObjectiveForm } from "@/components/OKRObjectiveForm";
 import { GamificationPanel } from "@/components/GamificationPanel";
+import { ArchiveManager } from "@/components/ArchiveManager";
+import { AIAssistant } from "@/components/AIAssistant";
+import { AuthManager } from "@/components/AuthManager";
 import {
   NotificationManager,
   ToastManager,
 } from "@/components/AchievementNotification";
 import { Button } from "@/components/ui/button";
-import { Target, FileText, ChevronRight, Trophy, User } from "lucide-react";
+import {
+  Target,
+  FileText,
+  ChevronRight,
+  Trophy,
+  User,
+  Archive,
+  Bot,
+  Settings,
+} from "lucide-react";
 import { SupabaseDataService } from "@/lib/supabaseDataService";
 import { GamificationService } from "@/lib/gamificationService";
 import { initializeSupabase } from "@/lib/supabase";
 import React from "react";
 
-type AppView = "meetings" | "okr" | "okr-form" | "profile";
+type AppView =
+  | "meetings"
+  | "okr"
+  | "okr-form"
+  | "profile"
+  | "archive"
+  | "ai-assistant"
+  | "auth";
 
 function App() {
   const [currentView, setCurrentView] = useState<AppView>("meetings");
@@ -47,6 +73,12 @@ function App() {
   });
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [showProfilePanel, setShowProfilePanel] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [objectives, setObjectives] = useState<Objective[]>([]);
+  const [templates, setTemplates] = useState<MeetingTemplate[]>([]);
+  const [cycles, setCycles] = useState<OKRCycle[]>([]);
+  const [archiveHistory, setArchiveHistory] = useState<ArchiveOperation[]>([]);
 
   // Services
   const dataService = SupabaseDataService.getInstance();
@@ -55,32 +87,60 @@ function App() {
   // Initialize app and load data
   useEffect(() => {
     const initializeApp = async () => {
-      // Initialize Supabase connection
-      await initializeSupabase();
+      try {
+        // Initialize Supabase connection
+        const isConnected = await initializeSupabase();
+        if (!isConnected) {
+          console.error("Failed to connect to Supabase");
+          return;
+        }
 
-      // Load API key from environment or localStorage
-      const envApiKey = import.meta.env.VITE_OPENAI_API_KEY;
-      const localApiKey = localStorage.getItem("openai_api_key");
+        // Load API key from environment or localStorage
+        const envApiKey = import.meta.env.VITE_OPENAI_API_KEY;
+        const localApiKey = localStorage.getItem("openai_api_key");
 
-      if (envApiKey) {
-        setApiKey(envApiKey);
-      } else if (localApiKey) {
-        setApiKey(localApiKey);
-      }
+        if (envApiKey) {
+          setApiKey(envApiKey);
+        } else if (localApiKey) {
+          setApiKey(localApiKey);
+        }
 
-      // Load user stats
-      const stats = await dataService.getUserStats();
-      setUserStats(stats);
-
-      // Load default view from preferences
-      const preferences = await dataService.getPreferences();
-      if (preferences?.defaultView && preferences.defaultView !== currentView) {
-        setCurrentView(preferences.defaultView);
+        // Load all data
+        await loadAppData();
+      } catch (error) {
+        console.error("Error initializing app:", error);
       }
     };
 
     initializeApp();
   }, []);
+
+  // Load all application data
+  const loadAppData = async () => {
+    try {
+      const [stats, objectivesData, templatesData, cyclesData, preferences] =
+        await Promise.all([
+          dataService.getUserStats(),
+          dataService.getObjectives(),
+          dataService.getTemplates(),
+          // dataService.getCycles(), // Would need to implement this
+          [] as OKRCycle[], // Placeholder
+          dataService.getPreferences(),
+        ]);
+
+      setUserStats(stats);
+      setObjectives(objectivesData);
+      setTemplates(templatesData);
+      setCycles(cyclesData);
+
+      // Set default view from preferences
+      if (preferences?.defaultView && preferences.defaultView !== currentView) {
+        setCurrentView(preferences.defaultView);
+      }
+    } catch (error) {
+      console.error("Error loading app data:", error);
+    }
+  };
 
   // Track user activity and award points
   const trackActivity = useCallback(
@@ -228,6 +288,180 @@ function App() {
     setCurrentView("profile");
   };
 
+  // Authentication handlers
+  const handleAuthStateChange = (user: any, profile: UserProfile | null) => {
+    setCurrentUser(user);
+    setUserProfile(profile);
+    if (user && profile) {
+      // Convert UserProfile to UserStats if needed
+      const stats: UserStats = {
+        id: profile.id,
+        username: profile.username,
+        level: profile.stats.level,
+        totalPoints: profile.stats.totalPoints,
+        currentStreak: profile.stats.currentStreak,
+        longestStreak: profile.stats.longestStreak,
+        joinDate: profile.stats.joinDate,
+        lastActive: profile.stats.lastActive,
+        achievements: profile.stats.achievements,
+        stats: profile.stats.stats,
+      };
+      setUserStats(stats);
+    }
+  };
+
+  const handleProfileUpdate = (profile: UserProfile) => {
+    setUserProfile(profile);
+    // Reload app data after profile update
+    loadAppData();
+  };
+
+  // Archive management handlers
+  const handleArchive = async (
+    type: "objective" | "template" | "cycle",
+    id: string,
+    reason?: string
+  ): Promise<boolean> => {
+    try {
+      // Implementation would depend on the specific type
+      if (type === "objective") {
+        const objective = objectives.find((obj) => obj.id === id);
+        if (objective) {
+          const updatedObjective = {
+            ...objective,
+            status: "archived" as const,
+            archivedDate: new Date().toISOString(),
+            archivedReason: reason,
+          };
+          await dataService.saveObjective(updatedObjective);
+        }
+      }
+      // Add similar logic for templates and cycles
+
+      await loadAppData(); // Refresh data
+      return true;
+    } catch (error) {
+      console.error("Error archiving item:", error);
+      return false;
+    }
+  };
+
+  const handleRestore = async (
+    type: "objective" | "template" | "cycle",
+    id: string
+  ): Promise<boolean> => {
+    try {
+      if (type === "objective") {
+        const objective = objectives.find((obj) => obj.id === id);
+        if (objective) {
+          const updatedObjective = {
+            ...objective,
+            status: "active" as const,
+            archivedDate: undefined,
+            archivedReason: undefined,
+          };
+          await dataService.saveObjective(updatedObjective);
+        }
+      }
+      // Add similar logic for templates and cycles
+
+      await loadAppData(); // Refresh data
+      return true;
+    } catch (error) {
+      console.error("Error restoring item:", error);
+      return false;
+    }
+  };
+
+  const handlePermanentDelete = async (
+    type: "objective" | "template" | "cycle",
+    id: string
+  ): Promise<boolean> => {
+    try {
+      if (type === "objective") {
+        await dataService.deleteObjective(id);
+      }
+      // Add similar logic for templates and cycles
+
+      await loadAppData(); // Refresh data
+      return true;
+    } catch (error) {
+      console.error("Error permanently deleting item:", error);
+      return false;
+    }
+  };
+
+  const handleBulkOperation = async (
+    operation: BulkOperation
+  ): Promise<boolean> => {
+    try {
+      // Implementation would handle bulk operations
+      for (const id of operation.resourceIds) {
+        switch (operation.operation) {
+          case "archive":
+            await handleArchive(operation.resourceType, id);
+            break;
+          case "restore":
+            await handleRestore(operation.resourceType, id);
+            break;
+          case "delete":
+            await handlePermanentDelete(operation.resourceType, id);
+            break;
+        }
+      }
+      return true;
+    } catch (error) {
+      console.error("Error performing bulk operation:", error);
+      return false;
+    }
+  };
+
+  // AI Assistant handlers
+  const handleObjectiveSuggestion = (suggestion: AIObjectiveSuggestion) => {
+    // Convert AI suggestion to Objective
+    const newObjective: Objective = {
+      id: `obj_${Date.now()}`,
+      title: suggestion.title,
+      description: suggestion.description,
+      category: suggestion.category,
+      level: suggestion.level,
+      owner: userProfile?.username || "Current User",
+      quarter: "2025-Q1",
+      year: 2025,
+      keyResults: suggestion.suggestedKeyResults.map((kr, index) => ({
+        id: `kr_${Date.now()}_${index}`,
+        description: kr,
+        startValue: 0,
+        targetValue: 100,
+        currentValue: 0,
+        unit: "units",
+        confidenceLevel: 5,
+        status: "on-track" as const,
+        lastUpdated: new Date().toISOString(),
+        milestones: [],
+      })),
+      alignedTo: null,
+      confidenceLevel: Math.round(suggestion.confidence * 10),
+      status: "draft",
+      createdDate: new Date().toISOString(),
+      lastUpdated: new Date().toISOString(),
+      checkIns: [],
+    };
+
+    setEditingObjective(newObjective);
+    setCurrentView("okr-form");
+  };
+
+  const handleKeyResultSuggestion = (suggestion: AIKeyResultSuggestion) => {
+    // This could be used to add KRs to an existing objective
+    console.log("Key result suggestion:", suggestion);
+  };
+
+  const handleAnalysisComplete = (analysis: AICheckInAnalysis) => {
+    // Handle AI analysis results
+    console.log("AI analysis complete:", analysis);
+  };
+
   const renderBreadcrumbs = () => {
     if (currentView === "meetings") return null;
 
@@ -309,6 +543,22 @@ function App() {
               >
                 <Target className="h-4 w-4" />
                 OKR Management
+              </Button>
+              <Button
+                variant={currentView === "ai-assistant" ? "default" : "outline"}
+                onClick={() => setCurrentView("ai-assistant")}
+                className="flex items-center gap-2"
+              >
+                <Bot className="h-4 w-4" />
+                AI Assistant
+              </Button>
+              <Button
+                variant={currentView === "archive" ? "default" : "outline"}
+                onClick={() => setCurrentView("archive")}
+                className="flex items-center gap-2"
+              >
+                <Archive className="h-4 w-4" />
+                Archive
               </Button>
             </div>
 
@@ -410,6 +660,47 @@ function App() {
           <GamificationPanel
             userStats={userStats}
             onClose={() => setCurrentView("meetings")}
+          />
+        )}
+
+        {/* Archive Management View */}
+        {currentView === "archive" && (
+          <ArchiveManager
+            objectives={objectives}
+            templates={templates}
+            cycles={cycles}
+            onArchive={handleArchive}
+            onRestore={handleRestore}
+            onPermanentDelete={handlePermanentDelete}
+            onBulkOperation={handleBulkOperation}
+            archiveHistory={archiveHistory}
+          />
+        )}
+
+        {/* AI Assistant View */}
+        {currentView === "ai-assistant" && (
+          <AIAssistant
+            currentObjectives={objectives}
+            companyGoals={[
+              "Revenue Growth",
+              "Customer Satisfaction",
+              "Operational Excellence",
+            ]}
+            department={userProfile?.department}
+            role={userProfile?.role}
+            onObjectiveSuggestion={handleObjectiveSuggestion}
+            onKeyResultSuggestion={handleKeyResultSuggestion}
+            onAnalysisComplete={handleAnalysisComplete}
+          />
+        )}
+
+        {/* Authentication View */}
+        {currentView === "auth" && (
+          <AuthManager
+            currentUser={currentUser}
+            userProfile={userProfile}
+            onAuthStateChange={handleAuthStateChange}
+            onProfileUpdate={handleProfileUpdate}
           />
         )}
 

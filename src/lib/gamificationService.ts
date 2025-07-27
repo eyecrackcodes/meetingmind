@@ -6,6 +6,7 @@ import {
   Objective,
   CheckIn,
   SessionActivity,
+  MeetingTemplate,
 } from "@/types";
 
 // Achievement definitions for Final Expense Insurance OKR system
@@ -465,7 +466,14 @@ export class GamificationService {
       case "meeting_completed":
         return 200;
       case "template_generated":
+        if (data?.imported) return 75; // Less points for importing vs generating
         return 150;
+      case "ai_suggestion_used":
+        return 200;
+      case "archive_operation":
+        return 25;
+      case "bulk_operation":
+        return data?.count ? data.count * 10 : 50;
       default:
         return 10;
     }
