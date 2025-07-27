@@ -23,8 +23,9 @@ import {
 } from "@/components/AchievementNotification";
 import { Button } from "@/components/ui/button";
 import { Target, FileText, ChevronRight, Trophy, User } from "lucide-react";
-import { DataService } from "@/lib/dataService";
+import { SupabaseDataService } from "@/lib/supabaseDataService";
 import { GamificationService } from "@/lib/gamificationService";
+import { initializeSupabase } from "@/lib/supabase";
 import React from "react";
 
 type AppView = "meetings" | "okr" | "okr-form" | "profile";
@@ -48,35 +49,42 @@ function App() {
   const [showProfilePanel, setShowProfilePanel] = useState(false);
 
   // Services
-  const dataService = DataService.getInstance();
+  const dataService = SupabaseDataService.getInstance();
   const gamificationService = GamificationService.getInstance();
 
   // Initialize app and load data
   useEffect(() => {
-    // Load API key from environment or localStorage
-    const envApiKey = import.meta.env.VITE_OPENAI_API_KEY;
-    const localApiKey = localStorage.getItem("openai_api_key");
+    const initializeApp = async () => {
+      // Initialize Supabase connection
+      await initializeSupabase();
 
-    if (envApiKey) {
-      setApiKey(envApiKey);
-    } else if (localApiKey) {
-      setApiKey(localApiKey);
-    }
+      // Load API key from environment or localStorage
+      const envApiKey = import.meta.env.VITE_OPENAI_API_KEY;
+      const localApiKey = localStorage.getItem("openai_api_key");
 
-    // Load user stats
-    const stats = dataService.getUserStats();
-    setUserStats(stats);
+      if (envApiKey) {
+        setApiKey(envApiKey);
+      } else if (localApiKey) {
+        setApiKey(localApiKey);
+      }
 
-    // Load default view from preferences
-    const preferences = dataService.getPreferences();
-    if (preferences.defaultView && preferences.defaultView !== currentView) {
-      setCurrentView(preferences.defaultView);
-    }
+      // Load user stats
+      const stats = await dataService.getUserStats();
+      setUserStats(stats);
+
+      // Load default view from preferences
+      const preferences = await dataService.getPreferences();
+      if (preferences?.defaultView && preferences.defaultView !== currentView) {
+        setCurrentView(preferences.defaultView);
+      }
+    };
+
+    initializeApp();
   }, []);
 
   // Track user activity and award points
   const trackActivity = useCallback(
-    (activityType: SessionActivity["type"], data?: any) => {
+    async (activityType: SessionActivity["type"], data?: any) => {
       if (!userStats) return;
 
       const points = gamificationService.calculateActivityPoints(
@@ -92,7 +100,7 @@ function App() {
       };
 
       // Add to current session
-      dataService.addSessionActivity(activity);
+      await dataService.addSessionActivity(activity);
 
       // Update user stats
       const updatedStats = gamificationService.updateUserStats(
@@ -107,10 +115,15 @@ function App() {
       if (newAchievements.length > 0) {
         updatedStats.achievements.push(...newAchievements);
         updatedStats.totalPoints += pointsEarned;
+
+        // Save new achievements to database
+        for (const achievement of newAchievements) {
+          await dataService.saveAchievement(achievement);
+        }
       }
 
       // Save updated stats
-      dataService.saveUserStats(updatedStats);
+      await dataService.saveUserStats(updatedStats);
       setUserStats(updatedStats);
     },
     [userStats, dataService, gamificationService]
@@ -121,32 +134,32 @@ function App() {
     localStorage.setItem("openai_api_key", key);
   };
 
-  const handleLoadTemplate = (template: MeetingTemplate) => {
+  const handleLoadTemplate = async (template: MeetingTemplate) => {
     setCurrentTemplate(template);
     setShowTemplateEditor(false);
 
     // Save template and track activity
-    dataService.saveTemplate(template);
+    await dataService.saveTemplate(template);
     trackActivity("meeting_completed", { template: template.meetingTitle });
   };
 
-  const handleTemplateGenerated = (template: MeetingTemplate) => {
+  const handleTemplateGenerated = async (template: MeetingTemplate) => {
     setCurrentTemplate(template);
     setShowTemplateEditor(false);
     setShowTemplateGenerator(false);
 
     // Save template and track activity
-    dataService.saveTemplate(template);
+    await dataService.saveTemplate(template);
     trackActivity("template_generated", { template: template.meetingTitle });
   };
 
-  const handleImportTemplate = (template: MeetingTemplate) => {
+  const handleImportTemplate = async (template: MeetingTemplate) => {
     setCurrentTemplate(template);
     setShowTemplateEditor(false);
     setShowTemplateGenerator(false);
 
     // Save template
-    dataService.saveTemplate(template);
+    await dataService.saveTemplate(template);
     trackActivity("template_generated", {
       template: template.meetingTitle,
       imported: true,
@@ -179,9 +192,9 @@ function App() {
     setCurrentView("okr-form");
   };
 
-  const handleSaveObjective = (objective: Objective) => {
+  const handleSaveObjective = async (objective: Objective) => {
     // Save objective
-    dataService.saveObjective(objective);
+    await dataService.saveObjective(objective);
 
     // Track activity
     const isNew = !editingObjective;
