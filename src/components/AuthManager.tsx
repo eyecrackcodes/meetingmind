@@ -159,6 +159,8 @@ export function AuthManager({
           autoSave: true,
         },
         stats: {
+          id: data.id,
+          username: data.username,
           level: data.level,
           totalPoints: data.total_points,
           currentStreak: data.current_streak,

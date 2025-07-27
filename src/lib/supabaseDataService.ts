@@ -14,26 +14,7 @@ import { supabase, getCurrentUser, signInAnonymously } from "./supabase";
 const APP_VERSION = "1.0.0";
 
 // Default user stats for new users
-const DEFAULT_USER_STATS: Omit<UserStats, "id"> = {
-  username: "User",
-  level: 1,
-  totalPoints: 0,
-  currentStreak: 0,
-  longestStreak: 0,
-  joinDate: new Date().toISOString(),
-  lastActive: new Date().toISOString(),
-  achievements: [],
-  stats: {
-    objectivesCreated: 0,
-    objectivesCompleted: 0,
-    keyResultsAchieved: 0,
-    checkInsCompleted: 0,
-    avgConfidenceLevel: 0,
-    avgProgressRate: 0,
-    totalSessions: 0,
-    totalTimeSpent: 0,
-  },
-};
+// Default user stats are now inline in database operations
 
 // Default user preferences
 const DEFAULT_PREFERENCES: Omit<UserPreferences, "id"> = {
