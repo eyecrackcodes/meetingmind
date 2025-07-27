@@ -1,120 +1,411 @@
-import { useState, useEffect } from 'react'
-import { MeetingTemplate } from '@/types'
-import { Header } from '@/components/Header'
-import { FrameworkPanel } from '@/components/FrameworkPanel'
-import { ControlPanel } from '@/components/ControlPanel'
-import { ApiKeyManager } from '@/components/ApiKeyManager'
-import { TemplateEditor } from '@/components/TemplateEditor'
-import { TemplateGenerator } from '@/components/TemplateGenerator'
-import { ProgressTracker } from '@/components/ProgressTracker'
-import { InteractiveChecklist } from '@/components/InteractiveChecklist'
-import { AICoachingPanel } from '@/components/AICoachingPanel'
-// import { getSampleTemplate } from '@/lib/sampleData'
+import { useState, useEffect, useCallback } from "react";
+import {
+  MeetingTemplate,
+  Objective,
+  UserStats,
+  SessionActivity,
+} from "@/types";
+import { Header } from "@/components/Header";
+import { FrameworkPanel } from "@/components/FrameworkPanel";
+import { ControlPanel } from "@/components/ControlPanel";
+import { ApiKeyManager } from "@/components/ApiKeyManager";
+import { TemplateEditor } from "@/components/TemplateEditor";
+import { TemplateGenerator } from "@/components/TemplateGenerator";
+import { ProgressTracker } from "@/components/ProgressTracker";
+import { InteractiveChecklist } from "@/components/InteractiveChecklist";
+import { AICoachingPanel } from "@/components/AICoachingPanel";
+import { OKRDashboard } from "@/components/OKRDashboard";
+import { OKRObjectiveForm } from "@/components/OKRObjectiveForm";
+import { GamificationPanel } from "@/components/GamificationPanel";
+import {
+  NotificationManager,
+  ToastManager,
+} from "@/components/AchievementNotification";
+import { Button } from "@/components/ui/button";
+import { Target, FileText, ChevronRight, Trophy, User } from "lucide-react";
+import { DataService } from "@/lib/dataService";
+import { GamificationService } from "@/lib/gamificationService";
+import React from "react";
+
+type AppView = "meetings" | "okr" | "okr-form" | "profile";
 
 function App() {
-  const [currentTemplate, setCurrentTemplate] = useState<MeetingTemplate | null>(null)
-  const [showTemplateEditor, setShowTemplateEditor] = useState(false)
-  const [showTemplateGenerator, setShowTemplateGenerator] = useState(false)
-  const [apiKey, setApiKey] = useState<string>('')
-  const [progress, setProgress] = useState({ totalItems: 0, completedItems: 0, percentage: 0 })
+  const [currentView, setCurrentView] = useState<AppView>("meetings");
+  const [currentTemplate, setCurrentTemplate] =
+    useState<MeetingTemplate | null>(null);
+  const [showTemplateEditor, setShowTemplateEditor] = useState(false);
+  const [showTemplateGenerator, setShowTemplateGenerator] = useState(false);
+  const [editingObjective, setEditingObjective] = useState<Objective | null>(
+    null
+  );
+  const [apiKey, setApiKey] = useState<string>("");
+  const [progress, setProgress] = useState({
+    totalItems: 0,
+    completedItems: 0,
+    percentage: 0,
+  });
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
+  const [showProfilePanel, setShowProfilePanel] = useState(false);
 
+  // Services
+  const dataService = DataService.getInstance();
+  const gamificationService = GamificationService.getInstance();
+
+  // Initialize app and load data
   useEffect(() => {
     // Load API key from environment or localStorage
-    const envApiKey = import.meta.env.VITE_OPENAI_API_KEY
-    const localApiKey = localStorage.getItem('openai_api_key')
-    
+    const envApiKey = import.meta.env.VITE_OPENAI_API_KEY;
+    const localApiKey = localStorage.getItem("openai_api_key");
+
     if (envApiKey) {
-      setApiKey(envApiKey)
+      setApiKey(envApiKey);
     } else if (localApiKey) {
-      setApiKey(localApiKey)
+      setApiKey(localApiKey);
     }
-  }, [])
+
+    // Load user stats
+    const stats = dataService.getUserStats();
+    setUserStats(stats);
+
+    // Load default view from preferences
+    const preferences = dataService.getPreferences();
+    if (preferences.defaultView && preferences.defaultView !== currentView) {
+      setCurrentView(preferences.defaultView);
+    }
+  }, []);
+
+  // Track user activity and award points
+  const trackActivity = useCallback(
+    (activityType: SessionActivity["type"], data?: any) => {
+      if (!userStats) return;
+
+      const points = gamificationService.calculateActivityPoints(
+        activityType,
+        data
+      );
+      const activity: SessionActivity = {
+        id: `activity_${Date.now()}`,
+        type: activityType,
+        timestamp: new Date().toISOString(),
+        data,
+        pointsEarned: points,
+      };
+
+      // Add to current session
+      dataService.addSessionActivity(activity);
+
+      // Update user stats
+      const updatedStats = gamificationService.updateUserStats(
+        userStats,
+        activity
+      );
+
+      // Check for new achievements
+      const { newAchievements, pointsEarned } =
+        gamificationService.checkAchievements(updatedStats, activity);
+
+      if (newAchievements.length > 0) {
+        updatedStats.achievements.push(...newAchievements);
+        updatedStats.totalPoints += pointsEarned;
+      }
+
+      // Save updated stats
+      dataService.saveUserStats(updatedStats);
+      setUserStats(updatedStats);
+    },
+    [userStats, dataService, gamificationService]
+  );
 
   const handleSaveApiKey = (key: string) => {
-    setApiKey(key)
-    localStorage.setItem('openai_api_key', key)
-  }
+    setApiKey(key);
+    localStorage.setItem("openai_api_key", key);
+  };
 
   const handleLoadTemplate = (template: MeetingTemplate) => {
-    setCurrentTemplate(template)
-    setShowTemplateEditor(false)
-  }
+    setCurrentTemplate(template);
+    setShowTemplateEditor(false);
+
+    // Save template and track activity
+    dataService.saveTemplate(template);
+    trackActivity("meeting_completed", { template: template.meetingTitle });
+  };
 
   const handleTemplateGenerated = (template: MeetingTemplate) => {
-    setCurrentTemplate(template)
-    setShowTemplateEditor(false)
-    setShowTemplateGenerator(false)
-  }
+    setCurrentTemplate(template);
+    setShowTemplateEditor(false);
+    setShowTemplateGenerator(false);
+
+    // Save template and track activity
+    dataService.saveTemplate(template);
+    trackActivity("template_generated", { template: template.meetingTitle });
+  };
 
   const handleImportTemplate = (template: MeetingTemplate) => {
-    setCurrentTemplate(template)
-    setShowTemplateEditor(false)
-    setShowTemplateGenerator(false)
-  }
+    setCurrentTemplate(template);
+    setShowTemplateEditor(false);
+    setShowTemplateGenerator(false);
 
-  const handleProgressUpdate = (newProgress: { totalItems: number; completedItems: number; percentage: number }) => {
-    setProgress(newProgress)
-  }
+    // Save template
+    dataService.saveTemplate(template);
+    trackActivity("template_generated", {
+      template: template.meetingTitle,
+      imported: true,
+    });
+  };
+
+  const handleProgressUpdate = (newProgress: {
+    totalItems: number;
+    completedItems: number;
+    percentage: number;
+  }) => {
+    setProgress(newProgress);
+
+    // Track check-in activity when progress is updated
+    if (newProgress.percentage > progress.percentage) {
+      trackActivity("check_in_completed", {
+        progress: newProgress.percentage,
+        itemsCompleted: newProgress.completedItems - progress.completedItems,
+      });
+    }
+  };
+
+  const handleCreateObjective = () => {
+    setEditingObjective(null);
+    setCurrentView("okr-form");
+  };
+
+  const handleEditObjective = (objective: Objective) => {
+    setEditingObjective(objective);
+    setCurrentView("okr-form");
+  };
+
+  const handleSaveObjective = (objective: Objective) => {
+    // Save objective
+    dataService.saveObjective(objective);
+
+    // Track activity
+    const isNew = !editingObjective;
+    if (isNew) {
+      trackActivity("objective_created", {
+        objective: objective.title,
+        category: objective.category,
+        level: objective.level,
+      });
+    } else {
+      trackActivity("objective_updated", {
+        objective: objective.title,
+        completed: objective.status === "completed",
+      });
+    }
+
+    setCurrentView("okr");
+    setEditingObjective(null);
+  };
+
+  const handleCancelObjectiveEdit = () => {
+    setCurrentView("okr");
+    setEditingObjective(null);
+  };
+
+  const handleViewProfile = () => {
+    setCurrentView("profile");
+  };
+
+  const handleViewAchievements = () => {
+    setCurrentView("profile");
+  };
+
+  const renderBreadcrumbs = () => {
+    if (currentView === "meetings") return null;
+
+    const breadcrumbs = [];
+
+    if (currentView.startsWith("okr")) {
+      breadcrumbs.push({ label: "OKR Dashboard", view: "okr" as AppView });
+    }
+
+    if (currentView === "profile") {
+      breadcrumbs.push({ label: "Profile", view: "profile" as AppView });
+    }
+
+    if (currentView === "okr-form") {
+      breadcrumbs.push({
+        label: editingObjective ? "Edit Objective" : "Create Objective",
+        view: "okr-form" as AppView,
+      });
+    }
+
+    if (breadcrumbs.length === 0) return null;
+
+    return (
+      <div className="mb-6">
+        <nav className="flex items-center space-x-2 text-sm text-gray-600">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setCurrentView("meetings")}
+            className="text-gray-600 hover:text-gray-900"
+          >
+            Meetings
+          </Button>
+          {breadcrumbs.map((breadcrumb, index) => (
+            <React.Fragment key={breadcrumb.view}>
+              <ChevronRight className="h-4 w-4" />
+              {index === breadcrumbs.length - 1 ? (
+                <span className="font-medium text-gray-900">
+                  {breadcrumb.label}
+                </span>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCurrentView(breadcrumb.view)}
+                  className="text-gray-600 hover:text-gray-900"
+                >
+                  {breadcrumb.label}
+                </Button>
+              )}
+            </React.Fragment>
+          ))}
+        </nav>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
         <Header />
-        
-        {!apiKey && (
-          <ApiKeyManager 
-            onSaveApiKey={handleSaveApiKey}
-          />
+
+        {/* Main Navigation */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div className="flex items-center gap-4">
+              <Button
+                variant={currentView === "meetings" ? "default" : "outline"}
+                onClick={() => setCurrentView("meetings")}
+                className="flex items-center gap-2"
+              >
+                <FileText className="h-4 w-4" />
+                Meeting Templates & Critical Thinking
+              </Button>
+              <Button
+                variant={currentView.startsWith("okr") ? "default" : "outline"}
+                onClick={() => setCurrentView("okr")}
+                className="flex items-center gap-2"
+              >
+                <Target className="h-4 w-4" />
+                OKR Management
+              </Button>
+            </div>
+
+            {/* User Profile Section */}
+            {userStats && (
+              <div className="flex items-center gap-3">
+                {/* Compact Profile Display */}
+                <GamificationPanel userStats={userStats} compact={true} />
+                <Button
+                  variant={currentView === "profile" ? "default" : "outline"}
+                  onClick={handleViewProfile}
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <User className="h-4 w-4" />
+                  Profile
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {renderBreadcrumbs()}
+
+        {!apiKey && currentView === "meetings" && (
+          <ApiKeyManager onSaveApiKey={handleSaveApiKey} />
         )}
 
-        <FrameworkPanel />
-
-                <ControlPanel 
-          hasTemplate={!!currentTemplate}
-          onCreateNew={() => setShowTemplateEditor(true)}
-          onCreateAI={() => setShowTemplateGenerator(true)}
-          onLoadTemplate={handleLoadTemplate}
-          onImportTemplate={handleImportTemplate}
-          currentTemplate={currentTemplate}
-          hasApiKey={!!apiKey}
-        />
-
-        {showTemplateEditor && (
-          <TemplateEditor
-            apiKey={apiKey}
-            onClose={() => setShowTemplateEditor(false)}
-            onGenerate={handleTemplateGenerated}
-          />
-        )}
-
-        {showTemplateGenerator && apiKey && (
-          <TemplateGenerator
-            apiKey={apiKey}
-            onClose={() => setShowTemplateGenerator(false)}
-            onGenerate={handleTemplateGenerated}
-          />
-        )}
-
-        {currentTemplate && (
+        {/* Meeting Templates View */}
+        {currentView === "meetings" && (
           <>
-            <ProgressTracker progress={progress} />
-            {apiKey && (
-              <AICoachingPanel
+            <FrameworkPanel />
+
+            <ControlPanel
+              hasTemplate={!!currentTemplate}
+              onCreateNew={() => setShowTemplateEditor(true)}
+              onCreateAI={() => setShowTemplateGenerator(true)}
+              onLoadTemplate={handleLoadTemplate}
+              onImportTemplate={handleImportTemplate}
+              currentTemplate={currentTemplate}
+              hasApiKey={!!apiKey}
+            />
+
+            {showTemplateEditor && (
+              <TemplateEditor
                 apiKey={apiKey}
-                template={currentTemplate}
-                completedItems={progress.completedItems}
-                totalItems={progress.totalItems}
+                onClose={() => setShowTemplateEditor(false)}
+                onGenerate={handleTemplateGenerated}
               />
             )}
-            <InteractiveChecklist
-              template={currentTemplate}
-              onProgressUpdate={handleProgressUpdate}
-            />
+
+            {showTemplateGenerator && apiKey && (
+              <TemplateGenerator
+                apiKey={apiKey}
+                onClose={() => setShowTemplateGenerator(false)}
+                onGenerate={handleTemplateGenerated}
+              />
+            )}
+
+            {currentTemplate && (
+              <>
+                <ProgressTracker progress={progress} />
+                {apiKey && (
+                  <AICoachingPanel
+                    apiKey={apiKey}
+                    template={currentTemplate}
+                    completedItems={progress.completedItems}
+                    totalItems={progress.totalItems}
+                  />
+                )}
+                <InteractiveChecklist
+                  template={currentTemplate}
+                  onProgressUpdate={handleProgressUpdate}
+                />
+              </>
+            )}
           </>
         )}
+
+        {/* OKR Dashboard View */}
+        {currentView === "okr" && (
+          <OKRDashboard
+            onCreateObjective={handleCreateObjective}
+            onEditObjective={handleEditObjective}
+          />
+        )}
+
+        {/* OKR Form View */}
+        {currentView === "okr-form" && (
+          <OKRObjectiveForm
+            objective={editingObjective || undefined}
+            onSave={handleSaveObjective}
+            onCancel={handleCancelObjectiveEdit}
+          />
+        )}
+
+        {/* Profile View */}
+        {currentView === "profile" && userStats && (
+          <GamificationPanel
+            userStats={userStats}
+            onClose={() => setCurrentView("meetings")}
+          />
+        )}
+
+        {/* Notification Systems */}
+        <NotificationManager onViewAchievements={handleViewAchievements} />
+        <ToastManager />
       </div>
     </div>
-  )
+  );
 }
 
-export default App 
+export default App;

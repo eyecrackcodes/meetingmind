@@ -1,70 +1,69 @@
-import React, { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
-import { Input } from '@/components/ui/input'
-import { Bot, Sparkles, X, Clock, Users, Target } from 'lucide-react'
-import { MeetingTemplate } from '@/types'
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Bot, Sparkles, X, Clock, Users, Target } from "lucide-react";
+import { MeetingTemplate } from "@/types";
 
 interface TemplateGeneratorProps {
-  apiKey: string
-  onClose: () => void
-  onGenerate: (template: MeetingTemplate) => void
+  apiKey: string;
+  onClose: () => void;
+  onGenerate: (template: MeetingTemplate) => void;
 }
 
-export function TemplateGenerator({ apiKey, onClose, onGenerate }: TemplateGeneratorProps) {
-  const [prompt, setPrompt] = useState('')
-  const [meetingType, setMeetingType] = useState('')
-  const [duration, setDuration] = useState('60')
-  const [participants, setParticipants] = useState('')
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [lastError, setLastError] = useState('')
+export function TemplateGenerator({
+  apiKey,
+  onClose,
+  onGenerate,
+}: TemplateGeneratorProps) {
+  const [prompt, setPrompt] = useState("");
+  const [meetingType, setMeetingType] = useState("");
+  const [duration, setDuration] = useState("60");
+  const [participants, setParticipants] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [lastError, setLastError] = useState("");
 
   const suggestedPrompts = [
     {
       icon: "🎯",
       title: "New Agent Onboarding",
-      prompt: "Create a comprehensive onboarding meeting for new final expense agents covering product basics, sales process, compliance requirements, and initial goal setting."
+      prompt:
+        "Create a comprehensive onboarding meeting for new final expense agents covering product basics, sales process, compliance requirements, and initial goal setting.",
     },
     {
       icon: "📊",
       title: "Monthly Performance Review",
-      prompt: "Design a monthly team performance review meeting analyzing conversion rates, persistency, call quality, and identifying improvement opportunities."
+      prompt:
+        "Design a monthly team performance review meeting analyzing conversion rates, persistency, call quality, and identifying improvement opportunities.",
     },
     {
       icon: "🔄",
       title: "Process Improvement Session",
-      prompt: "Build a meeting template for identifying and implementing process improvements in our lead management and appointment scheduling workflows."
+      prompt:
+        "Build a meeting template for identifying and implementing process improvements in our lead management and appointment scheduling workflows.",
     },
     {
       icon: "🏆",
       title: "Top Producer Training",
-      prompt: "Create an advanced training session for top-performing agents to share best practices, advanced objection handling, and leadership development."
-    }
-  ]
+      prompt:
+        "Create an advanced training session for top-performing agents to share best practices, advanced objection handling, and leadership development.",
+    },
+  ];
 
   const generateTemplate = async () => {
     if (!prompt.trim()) {
-      setLastError('Please provide a description of the meeting you want to create.')
-      return
+      setLastError(
+        "Please provide a description of the meeting you want to create."
+      );
+      return;
     }
 
-    setIsGenerating(true)
-    setLastError('')
+    setIsGenerating(true);
+    setLastError("");
 
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          model: 'gpt-4',
-          messages: [
-            {
-              role: 'system',
-              content: `You are an expert in final expense insurance and critical thinking methodologies. You help create structured meeting templates that incorporate Paul and Elder's 8 Elements of Critical Thinking.
+      const systemMessage = `You are an expert in final expense insurance and critical thinking methodologies. You help create structured meeting templates that incorporate Paul and Elder's 8 Elements of Critical Thinking.
 
 For final expense call centers, focus on:
 - Product knowledge (whole life, term, final expense specific features)
@@ -104,62 +103,126 @@ Return ONLY a valid JSON object matching this exact structure:
       ]
     }
   ]
-}`
-            },
-            {
-              role: 'user',
-              content: `Create a meeting template for: ${prompt}
+}`;
+
+      const userMessage = `Create a meeting template for: ${prompt}
 
 Meeting Details:
-- Type: ${meetingType || 'General Meeting'}
+- Type: ${meetingType || "General Meeting"}
 - Duration: ${duration} minutes
-- Participants: ${participants || 'Team members'}
+- Participants: ${participants || "Team members"}
 
-Make it specific to final expense insurance operations and include critical thinking elements throughout.`
+Make it specific to final expense insurance operations and include critical thinking elements throughout.`;
+
+      // Try GPT-4 first, then fallback to GPT-3.5-turbo
+      const models = ["gpt-4", "gpt-3.5-turbo"];
+      let lastError: Error | null = null;
+
+      for (const model of models) {
+        try {
+          const response = await fetch(
+            "https://api.openai.com/v1/chat/completions",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${apiKey}`,
+              },
+              body: JSON.stringify({
+                model: model,
+                messages: [
+                  {
+                    role: "system",
+                    content: systemMessage,
+                  },
+                  {
+                    role: "user",
+                    content: userMessage,
+                  },
+                ],
+                temperature: 0.7,
+                max_tokens: model === "gpt-4" ? 2000 : 3000,
+              }),
             }
-          ],
-          temperature: 0.7,
-          max_tokens: 2000
-        })
-      })
+          );
 
-      if (!response.ok) {
-        throw new Error(`API request failed: ${response.status} ${response.statusText}`)
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            const errorMessage =
+              errorData.error?.message ||
+              `${response.status} ${response.statusText}`;
+
+            if (response.status === 400 && model === "gpt-4") {
+              // Likely model access issue, try next model
+              lastError = new Error(
+                `GPT-4 not available (${errorMessage}), trying GPT-3.5-turbo...`
+              );
+              continue;
+            }
+
+            if (response.status === 401) {
+              throw new Error(
+                "Invalid API key. Please check your OpenAI API key."
+              );
+            }
+
+            if (response.status === 429) {
+              throw new Error(
+                "Rate limit exceeded. Please try again in a moment."
+              );
+            }
+
+            throw new Error(`API request failed: ${errorMessage}`);
+          }
+
+          const data = await response.json();
+          const content = data.choices[0]?.message?.content;
+
+          if (!content) {
+            throw new Error("No content received from AI");
+          }
+
+          // Parse the JSON response
+          let template: MeetingTemplate;
+          try {
+            template = JSON.parse(content);
+          } catch (parseError) {
+            throw new Error("Invalid JSON response from AI");
+          }
+
+          // Validate required fields
+          if (
+            !template.meetingTitle ||
+            !template.sections ||
+            !Array.isArray(template.sections)
+          ) {
+            throw new Error("Generated template is missing required fields");
+          }
+
+          onGenerate(template);
+          return; // Success - exit the function
+        } catch (error) {
+          lastError = error as Error;
+          // Continue to next model if available
+        }
       }
 
-      const data = await response.json()
-      const content = data.choices[0]?.message?.content
-
-      if (!content) {
-        throw new Error('No content received from AI')
-      }
-
-      // Parse the JSON response
-      let template: MeetingTemplate
-      try {
-        template = JSON.parse(content)
-      } catch (parseError) {
-        throw new Error('Invalid JSON response from AI')
-      }
-
-      // Validate required fields
-      if (!template.meetingTitle || !template.sections || !Array.isArray(template.sections)) {
-        throw new Error('Generated template is missing required fields')
-      }
-
-      onGenerate(template)
+      // If we get here, all models failed
+      throw lastError || new Error("Failed to generate template");
     } catch (error) {
-      console.error('Template generation error:', error)
-      setLastError(error instanceof Error ? error.message : 'Failed to generate template')
+      console.error("Template generation error:", error);
+      setLastError(
+        error instanceof Error ? error.message : "Failed to generate template"
+      );
     } finally {
-      setIsGenerating(false)
+      setIsGenerating(false);
     }
-  }
+  };
 
   const handleSuggestedPrompt = (suggestedPrompt: string, type: string) => {
-    setPrompt(suggestedPrompt)
-    setMeetingType(type)
-  }
+    setPrompt(suggestedPrompt);
+    setMeetingType(type);
+  };
 
   return (
     <Card className="mb-6 border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50">
@@ -175,7 +238,8 @@ Make it specific to final expense insurance operations and include critical thin
           </Button>
         </div>
         <p className="text-sm text-purple-700">
-          Describe the meeting you need, and AI will create a custom template with critical thinking integration
+          Describe the meeting you need, and AI will create a custom template
+          with critical thinking integration
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -192,7 +256,9 @@ Make it specific to final expense insurance operations and include critical thin
                 variant="outline"
                 size="sm"
                 className="text-left h-auto p-3 justify-start"
-                onClick={() => handleSuggestedPrompt(suggestion.prompt, suggestion.title)}
+                onClick={() =>
+                  handleSuggestedPrompt(suggestion.prompt, suggestion.title)
+                }
               >
                 <div>
                   <div className="font-medium text-purple-800">
@@ -274,18 +340,19 @@ Make it specific to final expense insurance operations and include critical thin
             className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700"
           >
             <Bot className="h-4 w-4" />
-            {isGenerating ? 'Generating Template...' : 'Generate AI Template'}
+            {isGenerating ? "Generating Template..." : "Generate AI Template"}
           </Button>
         </div>
 
         {/* AI Features Info */}
         <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-3 rounded-lg border border-purple-200">
           <p className="text-xs text-purple-700">
-            <strong>AI Features:</strong> Final expense expertise • Critical thinking integration • 
-            Industry-specific terminology • Compliance awareness • Performance optimization focus
+            <strong>AI Features:</strong> Final expense expertise • Critical
+            thinking integration • Industry-specific terminology • Compliance
+            awareness • Performance optimization focus
           </p>
         </div>
       </CardContent>
     </Card>
-  )
-} 
+  );
+}
