@@ -200,7 +200,7 @@ export interface Database {
           year: number;
           aligned_to?: string | null;
           confidence_level: number;
-          status?: "draft" | "active" | "completed" | "cancelled";
+          status?: "draft" | "active" | "completed" | "cancelled" | "archived";
           created_date?: string;
           last_updated?: string;
           key_results?: Json;
@@ -226,7 +226,7 @@ export interface Database {
           year?: number;
           aligned_to?: string | null;
           confidence_level?: number;
-          status?: "draft" | "active" | "completed" | "cancelled";
+          status?: "draft" | "active" | "completed" | "cancelled" | "archived";
           created_date?: string;
           last_updated?: string;
           key_results?: Json;

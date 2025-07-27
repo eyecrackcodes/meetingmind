@@ -5,7 +5,6 @@ import {
   UserSession,
   SessionActivity,
   Objective,
-  OKRCycle,
   MeetingTemplate,
   GameEvent,
   Achievement,
@@ -15,26 +14,7 @@ import { supabase, getCurrentUser, signInAnonymously } from "./supabase";
 const APP_VERSION = "1.0.0";
 
 // Default user stats for new users
-const DEFAULT_USER_STATS: Omit<UserStats, "id"> = {
-  username: "User",
-  level: 1,
-  totalPoints: 0,
-  currentStreak: 0,
-  longestStreak: 0,
-  joinDate: new Date().toISOString(),
-  lastActive: new Date().toISOString(),
-  achievements: [],
-  stats: {
-    objectivesCreated: 0,
-    objectivesCompleted: 0,
-    keyResultsAchieved: 0,
-    checkInsCompleted: 0,
-    avgConfidenceLevel: 0,
-    avgProgressRate: 0,
-    totalSessions: 0,
-    totalTimeSpent: 0,
-  },
-};
+// Default user stats are now inline in database operations
 
 // Default user preferences
 const DEFAULT_PREFERENCES: Omit<UserPreferences, "id"> = {
@@ -114,7 +94,16 @@ export class SupabaseDataService {
           longest_streak: 0,
           join_date: new Date().toISOString(),
           last_active: new Date().toISOString(),
-          stats: DEFAULT_USER_STATS.stats,
+          stats: {
+            objectives_created: 0,
+            objectives_completed: 0,
+            key_results_achieved: 0,
+            check_ins_completed: 0,
+            avg_confidence_level: 0,
+            avg_progress_rate: 0,
+            total_sessions: 0,
+            total_time_spent: 0,
+          },
         });
       }
 
@@ -196,18 +185,29 @@ export class SupabaseDataService {
         longestStreak: data.longest_streak,
         joinDate: data.join_date,
         lastActive: data.last_active,
-        achievements: data.achievements.map((a: any) => ({
-          id: a.achievement_id,
-          name: a.name,
-          description: a.description,
-          icon: a.icon,
-          category: a.category,
-          rarity: a.rarity,
-          points: a.points,
-          unlockedDate: a.unlocked_date,
-          condition: { type: "count", target: 1, metric: "default" },
-        })),
-        stats: data.stats,
+        achievements: Array.isArray(data.achievements)
+          ? data.achievements.map((a: any) => ({
+              id: a.achievement_id,
+              name: a.name,
+              description: a.description,
+              icon: a.icon,
+              category: a.category,
+              rarity: a.rarity,
+              points: a.points,
+              unlockedDate: a.unlocked_date,
+              condition: { type: "count", target: 1, metric: "default" },
+            }))
+          : [],
+        stats: {
+          objectivesCreated: data.stats?.objectives_created || 0,
+          objectivesCompleted: data.stats?.objectives_completed || 0,
+          keyResultsAchieved: data.stats?.key_results_achieved || 0,
+          checkInsCompleted: data.stats?.check_ins_completed || 0,
+          avgConfidenceLevel: data.stats?.avg_confidence_level || 0,
+          avgProgressRate: data.stats?.avg_progress_rate || 0,
+          totalSessions: data.stats?.total_sessions || 0,
+          totalTimeSpent: data.stats?.total_time_spent || 0,
+        },
       };
     } catch (error) {
       console.error("Error getting user stats:", error);
@@ -228,7 +228,16 @@ export class SupabaseDataService {
           current_streak: userStats.currentStreak,
           longest_streak: userStats.longestStreak,
           last_active: new Date().toISOString(),
-          stats: userStats.stats,
+          stats: {
+            objectives_created: userStats.stats.objectivesCreated,
+            objectives_completed: userStats.stats.objectivesCompleted,
+            key_results_achieved: userStats.stats.keyResultsAchieved,
+            check_ins_completed: userStats.stats.checkInsCompleted,
+            avg_confidence_level: userStats.stats.avgConfidenceLevel,
+            avg_progress_rate: userStats.stats.avgProgressRate,
+            total_sessions: userStats.stats.totalSessions,
+            total_time_spent: userStats.stats.totalTimeSpent,
+          },
         })
         .eq("user_id", this.currentUser.id);
 
@@ -302,7 +311,12 @@ export class SupabaseDataService {
       return {
         theme: data.theme,
         notifications: data.notifications,
-        gamification: data.gamification,
+        gamification: {
+          enabled: data.gamification?.enabled || true,
+          showLeaderboards: data.gamification?.show_leaderboards || true,
+          showPoints: data.gamification?.show_points || true,
+          showAchievements: data.gamification?.show_achievements || true,
+        },
         defaultView: data.default_view,
         autoSave: data.auto_save,
       } as UserPreferences;
@@ -383,7 +397,6 @@ export class SupabaseDataService {
 
     try {
       const { error } = await supabase.from("objectives").upsert({
-        id: objective.id,
         user_id: this.currentUser.id,
         title: objective.title,
         description: objective.description,
@@ -397,8 +410,11 @@ export class SupabaseDataService {
         status: objective.status,
         created_date: objective.createdDate,
         last_updated: new Date().toISOString(),
-        key_results: objective.keyResults,
-        check_ins: objective.checkIns,
+        key_results: objective.keyResults as any,
+        check_ins: objective.checkIns as any,
+        archived_date: objective.archivedDate,
+        archived_by: objective.archivedBy,
+        archived_reason: objective.archivedReason,
       });
 
       if (error) {
@@ -476,7 +492,13 @@ export class SupabaseDataService {
         facilitator: template.facilitator,
         core_question: template.coreQuestion,
         meeting_context: template.meetingContext,
-        sections: template.sections,
+        sections: template.sections as any,
+        status: template.status || "active",
+        created_date: template.createdDate || new Date().toISOString(),
+        tags: template.tags || [],
+        usage_count: template.usageCount || 0,
+        archived_date: template.archivedDate,
+        archived_by: template.archivedBy,
       });
 
       if (error) {
@@ -538,7 +560,7 @@ export class SupabaseDataService {
         .from("user_sessions")
         .update({
           total_time_spent: this.currentSession.totalTimeSpent,
-          activities: this.currentSession.activities,
+          activities: this.currentSession.activities as any,
         })
         .eq("session_id", this.currentSession.id)
         .eq("user_id", this.currentUser.id);
@@ -567,7 +589,7 @@ export class SupabaseDataService {
         .update({
           end_time: endTime,
           total_time_spent: this.currentSession.totalTimeSpent,
-          activities: this.currentSession.activities,
+          activities: this.currentSession.activities as any,
         })
         .eq("session_id", this.currentSession.id)
         .eq("user_id", this.currentUser.id);
@@ -697,10 +719,7 @@ export class SupabaseDataService {
   // Connection status
   async checkConnection(): Promise<boolean> {
     try {
-      const { data, error } = await supabase
-        .from("user_stats")
-        .select("id")
-        .limit(1);
+      const { error } = await supabase.from("user_stats").select("id").limit(1);
 
       return !error;
     } catch (error) {

@@ -1,27 +1,27 @@
-import React, { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Key, AlertCircle, Brain, Lightbulb, Users, BarChart } from 'lucide-react'
+import React, { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { AlertCircle, Brain, Lightbulb, Users, BarChart } from "lucide-react";
 
 interface ApiKeyManagerProps {
-  onSaveApiKey: (apiKey: string) => void
+  onSaveApiKey: (apiKey: string) => void;
 }
 
 export function ApiKeyManager({ onSaveApiKey }: ApiKeyManagerProps) {
-  const [apiKey, setApiKey] = useState('')
+  const [apiKey, setApiKey] = useState("");
 
   const handleSave = () => {
     if (apiKey.trim()) {
-      onSaveApiKey(apiKey.trim())
+      onSaveApiKey(apiKey.trim());
     }
-  }
+  };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSave()
+    if (e.key === "Enter") {
+      handleSave();
     }
-  }
+  };
 
   return (
     <Card className="mb-6 border-blue-200 bg-blue-50">
@@ -42,29 +42,44 @@ export function ApiKeyManager({ onSaveApiKey }: ApiKeyManagerProps) {
               <div className="space-y-2">
                 <div className="flex items-start gap-2">
                   <Brain className="h-3 w-3 mt-1 flex-shrink-0" />
-                  <span><strong>Template Generation:</strong> Create custom templates from simple prompts</span>
+                  <span>
+                    <strong>Template Generation:</strong> Create custom
+                    templates from simple prompts
+                  </span>
                 </div>
                 <div className="flex items-start gap-2">
                   <Users className="h-3 w-3 mt-1 flex-shrink-0" />
-                  <span><strong>Content Coaching:</strong> Real-time guidance on critical thinking coverage</span>
+                  <span>
+                    <strong>Content Coaching:</strong> Real-time guidance on
+                    critical thinking coverage
+                  </span>
                 </div>
               </div>
               <div className="space-y-2">
                 <div className="flex items-start gap-2">
                   <BarChart className="h-3 w-3 mt-1 flex-shrink-0" />
-                  <span><strong>Meeting Analysis:</strong> AI review of completeness and effectiveness</span>
+                  <span>
+                    <strong>Meeting Analysis:</strong> AI review of completeness
+                    and effectiveness
+                  </span>
                 </div>
                 <div className="flex items-start gap-2">
                   <Lightbulb className="h-3 w-3 mt-1 flex-shrink-0" />
-                  <span><strong>Industry Expertise:</strong> Final expense insurance specific recommendations</span>
+                  <span>
+                    <strong>Industry Expertise:</strong> Final expense insurance
+                    specific recommendations
+                  </span>
                 </div>
               </div>
             </div>
           </div>
-          
+
           <div className="space-y-3">
             <p className="text-sm text-blue-700">
-              <strong>Add your OpenAI API key to unlock AI-powered coaching and template generation:</strong>
+              <strong>
+                Add your OpenAI API key to unlock AI-powered coaching and
+                template generation:
+              </strong>
             </p>
             <div className="flex gap-2">
               <Input
@@ -82,12 +97,12 @@ export function ApiKeyManager({ onSaveApiKey }: ApiKeyManagerProps) {
             <div className="flex items-start gap-2 text-xs text-blue-600">
               <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
               <p>
-                Your API key is stored locally in your browser and never sent to our servers. 
-                Get your API key from{' '}
-                <a 
-                  href="https://platform.openai.com/api-keys" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
+                Your API key is stored locally in your browser and never sent to
+                our servers. Get your API key from{" "}
+                <a
+                  href="https://platform.openai.com/api-keys"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="underline hover:text-blue-800"
                 >
                   platform.openai.com/api-keys
@@ -98,5 +113,5 @@ export function ApiKeyManager({ onSaveApiKey }: ApiKeyManagerProps) {
         </div>
       </CardContent>
     </Card>
-  )
-} 
+  );
+}

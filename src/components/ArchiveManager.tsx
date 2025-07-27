@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,12 +10,8 @@ import {
   Trash2,
   RotateCcw,
   Search,
-  Filter,
   AlertTriangle,
-  CheckSquare,
-  Square,
   Calendar,
-  User,
   Folder,
   Eye,
   EyeOff,
@@ -27,7 +23,6 @@ import {
   OKRCycle,
   ArchiveOperation,
   BulkOperation,
-  FilterOptions,
 } from "@/types";
 
 interface ArchiveManagerProps {
@@ -67,9 +62,8 @@ export function ArchiveManager({
   const [showArchived, setShowArchived] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
-  const [bulkAction, setBulkAction] = useState<
-    "archive" | "restore" | "delete" | null
-  >(null);
+  // Bulk action state (future implementation)
+  // const [bulkAction, setBulkAction] = useState<"archive" | "restore" | "delete" | null>(null);
   const [archiveReason, setArchiveReason] = useState("");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [confirmAction, setConfirmAction] = useState<any>(null);

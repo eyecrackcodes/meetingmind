@@ -1,51 +1,61 @@
-import React from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion'
-import { CriticalThinkingElement } from '@/types'
-import { BookOpen } from 'lucide-react'
+import { Card } from "@/components/ui/card";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { CriticalThinkingElement } from "@/types";
+import { BookOpen } from "lucide-react";
 
 const frameworkElements: CriticalThinkingElement[] = [
   {
     icon: "🎯",
     title: "Purpose",
-    description: "What is the meeting trying to accomplish? What is our goal?"
+    description: "What is the meeting trying to accomplish? What is our goal?",
   },
   {
     icon: "❓",
     title: "Question",
-    description: "What key problem or issue are we addressing? What needs to be solved?"
+    description:
+      "What key problem or issue are we addressing? What needs to be solved?",
   },
   {
     icon: "📊",
     title: "Information",
-    description: "What data, facts, or evidence do we need to make good decisions?"
+    description:
+      "What data, facts, or evidence do we need to make good decisions?",
   },
   {
     icon: "🔍",
     title: "Interpretation",
-    description: "How do we make sense of the information? What does it mean?"
+    description: "How do we make sense of the information? What does it mean?",
   },
   {
     icon: "💡",
     title: "Concepts",
-    description: "What key ideas, principles, or frameworks guide our thinking?"
+    description:
+      "What key ideas, principles, or frameworks guide our thinking?",
   },
   {
     icon: "🤔",
     title: "Assumptions",
-    description: "What are we taking for granted? What beliefs underlie our thinking?"
+    description:
+      "What are we taking for granted? What beliefs underlie our thinking?",
   },
   {
     icon: "⚡",
     title: "Implications",
-    description: "What are the consequences of our decisions? What could happen?"
+    description:
+      "What are the consequences of our decisions? What could happen?",
   },
   {
     icon: "👥",
     title: "Point of View",
-    description: "What different perspectives should we consider? Who's affected?"
-  }
-]
+    description:
+      "What different perspectives should we consider? Who's affected?",
+  },
+];
 
 export function FrameworkPanel() {
   return (
@@ -55,7 +65,9 @@ export function FrameworkPanel() {
           <AccordionTrigger className="px-6">
             <div className="flex items-center gap-2">
               <BookOpen className="h-5 w-5" />
-              <span className="text-lg font-semibold">Critical Thinking Framework Reference</span>
+              <span className="text-lg font-semibold">
+                Critical Thinking Framework Reference
+              </span>
             </div>
           </AccordionTrigger>
           <AccordionContent className="px-6">
@@ -73,9 +85,7 @@ export function FrameworkPanel() {
                       <span className="text-lg">{element.icon}</span>
                       <h4 className="font-semibold text-lg">{element.title}</h4>
                     </div>
-                    <p className="text-sm opacity-90">
-                      {element.description}
-                    </p>
+                    <p className="text-sm opacity-90">{element.description}</p>
                   </div>
                 ))}
               </div>
@@ -84,5 +94,5 @@ export function FrameworkPanel() {
         </AccordionItem>
       </Accordion>
     </Card>
-  )
-} 
+  );
+}

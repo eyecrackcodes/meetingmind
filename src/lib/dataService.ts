@@ -420,7 +420,7 @@ export class DataService {
       this.createBackup();
 
       // Merge with existing data
-      const currentData = this.loadAppData();
+      // const currentData = this.loadAppData(); // Commented out as currently unused
       const mergedData: AppData = {
         ...importedData,
         version: APP_VERSION,
@@ -473,7 +473,7 @@ export class DataService {
   // Storage Management
   getStorageInfo(): { used: number; available: number; percentage: number } {
     try {
-      const test = "test";
+      // Connection test placeholder
       let used = 0;
 
       // Calculate used space

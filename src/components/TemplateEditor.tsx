@@ -1,43 +1,36 @@
-import React, { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { 
-  X, 
-  Plus, 
-  Trash2, 
-  Rocket, 
-  Lightbulb,
-  Bot
-} from 'lucide-react'
-import { MeetingTemplate, MeetingSection } from '@/types'
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { X, Plus, Trash2, Rocket, Lightbulb, Bot } from "lucide-react";
+import { MeetingTemplate } from "@/types";
 
 interface TemplateEditorProps {
-  apiKey: string
-  onClose: () => void
-  onGenerate: (template: MeetingTemplate) => void
+  apiKey: string;
+  onClose: () => void;
+  onGenerate: (template: MeetingTemplate) => void;
 }
 
 interface FormData {
-  meetingTitle: string
-  meetingDate: string
-  facilitator: string
-  coreQuestion: string
-  meetingContext: string
-  sections: SectionFormData[]
+  meetingTitle: string;
+  meetingDate: string;
+  facilitator: string;
+  coreQuestion: string;
+  meetingContext: string;
+  sections: SectionFormData[];
 }
 
 interface SectionFormData {
-  icon: string
-  title: string
-  criticalThinkingNotes: string
-  checklistItems: ItemFormData[]
+  icon: string;
+  title: string;
+  criticalThinkingNotes: string;
+  checklistItems: ItemFormData[];
 }
 
 interface ItemFormData {
-  title: string
-  description: string
+  title: string;
+  description: string;
 }
 
 const sectionIcons = [
@@ -48,106 +41,135 @@ const sectionIcons = [
   { value: "📋", label: "📋 Planning" },
   { value: "🔍", label: "🔍 Review/Analysis" },
   { value: "👥", label: "👥 Team Discussion" },
-  { value: "📈", label: "📈 Progress/Results" }
-]
+  { value: "📈", label: "📈 Progress/Results" },
+];
 
-export function TemplateEditor({ apiKey, onClose, onGenerate }: TemplateEditorProps) {
+export function TemplateEditor({
+  apiKey,
+  onClose,
+  onGenerate,
+}: TemplateEditorProps) {
   const [formData, setFormData] = useState<FormData>({
-    meetingTitle: '',
+    meetingTitle: "",
     meetingDate: new Date().toISOString().slice(0, 16),
-    facilitator: '',
-    coreQuestion: '',
-    meetingContext: '',
-    sections: [{
-      icon: '📊',
-      title: '',
-      criticalThinkingNotes: '',
-      checklistItems: [{ title: '', description: '' }]
-    }]
-  })
+    facilitator: "",
+    coreQuestion: "",
+    meetingContext: "",
+    sections: [
+      {
+        icon: "📊",
+        title: "",
+        criticalThinkingNotes: "",
+        checklistItems: [{ title: "", description: "" }],
+      },
+    ],
+  });
 
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const updateFormData = (field: keyof FormData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
-  }
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
 
   const addSection = () => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       sections: [
         ...prev.sections,
         {
-          icon: '📊',
-          title: '',
-          criticalThinkingNotes: '',
-          checklistItems: [{ title: '', description: '' }]
-        }
-      ]
-    }))
-  }
+          icon: "📊",
+          title: "",
+          criticalThinkingNotes: "",
+          checklistItems: [{ title: "", description: "" }],
+        },
+      ],
+    }));
+  };
 
   const removeSection = (sectionIndex: number) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      sections: prev.sections.filter((_, index) => index !== sectionIndex)
-    }))
-  }
+      sections: prev.sections.filter((_, index) => index !== sectionIndex),
+    }));
+  };
 
-  const updateSection = (sectionIndex: number, field: keyof SectionFormData, value: any) => {
-    setFormData(prev => ({
+  const updateSection = (
+    sectionIndex: number,
+    field: keyof SectionFormData,
+    value: any
+  ) => {
+    setFormData((prev) => ({
       ...prev,
-      sections: prev.sections.map((section, index) => 
+      sections: prev.sections.map((section, index) =>
         index === sectionIndex ? { ...section, [field]: value } : section
-      )
-    }))
-  }
+      ),
+    }));
+  };
 
   const addChecklistItem = (sectionIndex: number) => {
-    updateSection(sectionIndex, 'checklistItems', [
+    updateSection(sectionIndex, "checklistItems", [
       ...formData.sections[sectionIndex].checklistItems,
-      { title: '', description: '' }
-    ])
-  }
+      { title: "", description: "" },
+    ]);
+  };
 
   const removeChecklistItem = (sectionIndex: number, itemIndex: number) => {
-    updateSection(sectionIndex, 'checklistItems', 
-      formData.sections[sectionIndex].checklistItems.filter((_, index) => index !== itemIndex)
-    )
-  }
+    updateSection(
+      sectionIndex,
+      "checklistItems",
+      formData.sections[sectionIndex].checklistItems.filter(
+        (_, index) => index !== itemIndex
+      )
+    );
+  };
 
-  const updateChecklistItem = (sectionIndex: number, itemIndex: number, field: keyof ItemFormData, value: string) => {
-    const updatedItems = formData.sections[sectionIndex].checklistItems.map((item, index) =>
-      index === itemIndex ? { ...item, [field]: value } : item
-    )
-    updateSection(sectionIndex, 'checklistItems', updatedItems)
-  }
+  const updateChecklistItem = (
+    sectionIndex: number,
+    itemIndex: number,
+    field: keyof ItemFormData,
+    value: string
+  ) => {
+    const updatedItems = formData.sections[sectionIndex].checklistItems.map(
+      (item, index) =>
+        index === itemIndex ? { ...item, [field]: value } : item
+    );
+    updateSection(sectionIndex, "checklistItems", updatedItems);
+  };
 
   const analyzeWithAI = async () => {
     if (!apiKey) {
-      alert('Please add your OpenAI API key first.')
-      return
+      alert("Please add your OpenAI API key first.");
+      return;
     }
 
-    if (!formData.meetingTitle || !formData.coreQuestion || !formData.meetingContext) {
-      alert('Please fill in the meeting title, core question, and context before running AI analysis.')
-      return
+    if (
+      !formData.meetingTitle ||
+      !formData.coreQuestion ||
+      !formData.meetingContext
+    ) {
+      alert(
+        "Please fill in the meeting title, core question, and context before running AI analysis."
+      );
+      return;
     }
 
-    setIsAnalyzing(true)
+    setIsAnalyzing(true);
 
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          model: 'gpt-3.5-turbo',
-          messages: [{
-            role: 'user',
-            content: `Analyze this meeting plan using critical thinking principles. Provide specific suggestions for improvement:
+      const response = await fetch(
+        "https://api.openai.com/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: "gpt-3.5-turbo",
+            messages: [
+              {
+                role: "user",
+                content: `Analyze this meeting plan using critical thinking principles. Provide specific suggestions for improvement:
 
 Title: ${formData.meetingTitle}
 Core Question: ${formData.coreQuestion}
@@ -159,45 +181,49 @@ Please assess:
 3. Missing information - What key information might be needed?
 4. Perspectives - What viewpoints might be missing?
 
-Provide concise, actionable feedback.`
-          }],
-          max_tokens: 500,
-          temperature: 0.7
-        })
-      })
+Provide concise, actionable feedback.`,
+              },
+            ],
+            max_tokens: 500,
+            temperature: 0.7,
+          }),
+        }
+      );
 
-      const data = await response.json()
-      
+      const data = await response.json();
+
       if (data.choices && data.choices[0]) {
-        showAnalysisModal(data.choices[0].message.content)
+        showAnalysisModal(data.choices[0].message.content);
       } else {
-        throw new Error('No response from AI')
+        throw new Error("No response from AI");
       }
     } catch (error) {
-      alert('Error connecting to AI service. Please check your API key and internet connection.')
-      console.error('AI Analysis Error:', error)
+      alert(
+        "Error connecting to AI service. Please check your API key and internet connection."
+      );
+      console.error("AI Analysis Error:", error);
     } finally {
-      setIsAnalyzing(false)
+      setIsAnalyzing(false);
     }
-  }
+  };
 
   const showAnalysisModal = (analysis: string) => {
-    alert(`AI Critical Thinking Analysis:\n\n${analysis}`)
-  }
+    alert(`AI Critical Thinking Analysis:\n\n${analysis}`);
+  };
 
   const handleGenerate = () => {
     // Validate required fields
     if (!formData.meetingTitle.trim()) {
-      alert('Please enter a meeting title.')
-      return
+      alert("Please enter a meeting title.");
+      return;
     }
     if (!formData.coreQuestion.trim()) {
-      alert('Please enter a core question.')
-      return
+      alert("Please enter a core question.");
+      return;
     }
     if (!formData.meetingContext.trim()) {
-      alert('Please enter meeting context.')
-      return
+      alert("Please enter meeting context.");
+      return;
     }
 
     // Create the template
@@ -207,38 +233,44 @@ Provide concise, actionable feedback.`
       facilitator: formData.facilitator,
       coreQuestion: formData.coreQuestion,
       meetingContext: formData.meetingContext,
-      sections: formData.sections.map(section => ({
-        icon: section.icon,
-        title: section.title,
-        criticalThinkingNotes: section.criticalThinkingNotes,
-        checklistItems: section.checklistItems
-          .filter(item => item.title.trim() || item.description.trim())
-          .map(item => ({
-            title: item.title,
-            description: item.description,
-            completed: false
-          }))
-      })).filter(section => section.title.trim() || section.checklistItems.length > 0)
-    }
+      sections: formData.sections
+        .map((section) => ({
+          icon: section.icon,
+          title: section.title,
+          criticalThinkingNotes: section.criticalThinkingNotes,
+          checklistItems: section.checklistItems
+            .filter((item) => item.title.trim() || item.description.trim())
+            .map((item) => ({
+              title: item.title,
+              description: item.description,
+              completed: false,
+            })),
+        }))
+        .filter(
+          (section) => section.title.trim() || section.checklistItems.length > 0
+        ),
+    };
 
-    onGenerate(template)
-  }
+    onGenerate(template);
+  };
 
   const handleClear = () => {
     setFormData({
-      meetingTitle: '',
+      meetingTitle: "",
       meetingDate: new Date().toISOString().slice(0, 16),
-      facilitator: '',
-      coreQuestion: '',
-      meetingContext: '',
-      sections: [{
-        icon: '📊',
-        title: '',
-        criticalThinkingNotes: '',
-        checklistItems: [{ title: '', description: '' }]
-      }]
-    })
-  }
+      facilitator: "",
+      coreQuestion: "",
+      meetingContext: "",
+      sections: [
+        {
+          icon: "📊",
+          title: "",
+          criticalThinkingNotes: "",
+          checklistItems: [{ title: "", description: "" }],
+        },
+      ],
+    });
+  };
 
   return (
     <Card className="mb-6">
@@ -261,10 +293,11 @@ Provide concise, actionable feedback.`
             <Input
               placeholder="e.g., Q4 Strategic Planning Session"
               value={formData.meetingTitle}
-              onChange={(e) => updateFormData('meetingTitle', e.target.value)}
+              onChange={(e) => updateFormData("meetingTitle", e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              💡 A clear title should specify the meeting's main purpose and scope.
+              💡 A clear title should specify the meeting's main purpose and
+              scope.
             </p>
           </div>
 
@@ -273,7 +306,7 @@ Provide concise, actionable feedback.`
             <Input
               type="datetime-local"
               value={formData.meetingDate}
-              onChange={(e) => updateFormData('meetingDate', e.target.value)}
+              onChange={(e) => updateFormData("meetingDate", e.target.value)}
             />
           </div>
         </div>
@@ -283,7 +316,7 @@ Provide concise, actionable feedback.`
           <Input
             placeholder="Meeting facilitator name"
             value={formData.facilitator}
-            onChange={(e) => updateFormData('facilitator', e.target.value)}
+            onChange={(e) => updateFormData("facilitator", e.target.value)}
           />
         </div>
 
@@ -292,24 +325,28 @@ Provide concise, actionable feedback.`
           <Textarea
             placeholder="What is the central question or problem this meeting aims to address?"
             value={formData.coreQuestion}
-            onChange={(e) => updateFormData('coreQuestion', e.target.value)}
+            onChange={(e) => updateFormData("coreQuestion", e.target.value)}
             className="min-h-[100px]"
           />
           <p className="text-xs text-muted-foreground">
-            💡 Frame this as a specific, answerable question that drives the entire meeting.
+            💡 Frame this as a specific, answerable question that drives the
+            entire meeting.
           </p>
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium">Meeting Context & Background</label>
+          <label className="text-sm font-medium">
+            Meeting Context & Background
+          </label>
           <Textarea
             placeholder="Provide relevant background information and context for this meeting..."
             value={formData.meetingContext}
-            onChange={(e) => updateFormData('meetingContext', e.target.value)}
+            onChange={(e) => updateFormData("meetingContext", e.target.value)}
             className="min-h-[100px]"
           />
           <p className="text-xs text-muted-foreground">
-            💡 Include assumptions that need to be stated upfront and relevant history.
+            💡 Include assumptions that need to be stated upfront and relevant
+            history.
           </p>
         </div>
 
@@ -317,7 +354,11 @@ Provide concise, actionable feedback.`
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-semibold">Meeting Sections</h3>
-            <Button onClick={addSection} size="sm" className="flex items-center gap-2">
+            <Button
+              onClick={addSection}
+              size="sm"
+              className="flex items-center gap-2"
+            >
               <Plus className="h-4 w-4" />
               Add Section
             </Button>
@@ -345,9 +386,11 @@ Provide concise, actionable feedback.`
                     <select
                       className="w-full p-2 border rounded-md"
                       value={section.icon}
-                      onChange={(e) => updateSection(sectionIndex, 'icon', e.target.value)}
+                      onChange={(e) =>
+                        updateSection(sectionIndex, "icon", e.target.value)
+                      }
                     >
-                      {sectionIcons.map(icon => (
+                      {sectionIcons.map((icon) => (
                         <option key={icon.value} value={icon.value}>
                           {icon.label}
                         </option>
@@ -360,17 +403,27 @@ Provide concise, actionable feedback.`
                     <Input
                       placeholder="e.g., Budget Analysis"
                       value={section.title}
-                      onChange={(e) => updateSection(sectionIndex, 'title', e.target.value)}
+                      onChange={(e) =>
+                        updateSection(sectionIndex, "title", e.target.value)
+                      }
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Critical Thinking Notes</label>
+                  <label className="text-sm font-medium">
+                    Critical Thinking Notes
+                  </label>
                   <Textarea
                     placeholder="Which critical thinking elements are most important for this section?"
                     value={section.criticalThinkingNotes}
-                    onChange={(e) => updateSection(sectionIndex, 'criticalThinkingNotes', e.target.value)}
+                    onChange={(e) =>
+                      updateSection(
+                        sectionIndex,
+                        "criticalThinkingNotes",
+                        e.target.value
+                      )
+                    }
                   />
                 </div>
 
@@ -391,12 +444,16 @@ Provide concise, actionable feedback.`
                     <Card key={itemIndex} className="p-3 bg-background">
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">Item {itemIndex + 1}</span>
+                          <span className="text-sm font-medium">
+                            Item {itemIndex + 1}
+                          </span>
                           {section.checklistItems.length > 1 && (
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => removeChecklistItem(sectionIndex, itemIndex)}
+                              onClick={() =>
+                                removeChecklistItem(sectionIndex, itemIndex)
+                              }
                             >
                               <Trash2 className="h-3 w-3" />
                             </Button>
@@ -407,12 +464,26 @@ Provide concise, actionable feedback.`
                           <Input
                             placeholder="e.g., Review budget assumptions"
                             value={item.title}
-                            onChange={(e) => updateChecklistItem(sectionIndex, itemIndex, 'title', e.target.value)}
+                            onChange={(e) =>
+                              updateChecklistItem(
+                                sectionIndex,
+                                itemIndex,
+                                "title",
+                                e.target.value
+                              )
+                            }
                           />
                           <Textarea
                             placeholder="What specific questions need to be answered? What needs discussion?"
                             value={item.description}
-                            onChange={(e) => updateChecklistItem(sectionIndex, itemIndex, 'description', e.target.value)}
+                            onChange={(e) =>
+                              updateChecklistItem(
+                                sectionIndex,
+                                itemIndex,
+                                "description",
+                                e.target.value
+                              )
+                            }
                             className="min-h-[60px]"
                           />
                         </div>
@@ -445,11 +516,11 @@ Provide concise, actionable feedback.`
               className="flex items-center gap-2"
             >
               <Bot className="h-4 w-4" />
-              {isAnalyzing ? 'Analyzing...' : 'AI Clarity Check'}
+              {isAnalyzing ? "Analyzing..." : "AI Clarity Check"}
             </Button>
           )}
         </div>
       </CardContent>
     </Card>
-  )
-} 
+  );
+}

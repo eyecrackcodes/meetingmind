@@ -36,11 +36,9 @@ import {
   Target,
   FileText,
   ChevronRight,
-  Trophy,
   User,
   Archive,
   Bot,
-  Settings,
 } from "lucide-react";
 import { SupabaseDataService } from "@/lib/supabaseDataService";
 import { GamificationService } from "@/lib/gamificationService";
@@ -72,13 +70,12 @@ function App() {
     percentage: 0,
   });
   const [userStats, setUserStats] = useState<UserStats | null>(null);
-  const [showProfilePanel, setShowProfilePanel] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [objectives, setObjectives] = useState<Objective[]>([]);
   const [templates, setTemplates] = useState<MeetingTemplate[]>([]);
   const [cycles, setCycles] = useState<OKRCycle[]>([]);
-  const [archiveHistory, setArchiveHistory] = useState<ArchiveOperation[]>([]);
+  const [archiveHistory] = useState<ArchiveOperation[]>([]);
 
   // Services
   const dataService = SupabaseDataService.getInstance();
@@ -170,7 +167,7 @@ function App() {
 
       // Check for new achievements
       const { newAchievements, pointsEarned } =
-        gamificationService.checkAchievements(updatedStats, activity);
+        gamificationService.checkAchievements(updatedStats);
 
       if (newAchievements.length > 0) {
         updatedStats.achievements.push(...newAchievements);

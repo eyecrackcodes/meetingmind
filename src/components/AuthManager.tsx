@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,13 +14,10 @@ import {
   UserPlus,
   Shield,
   Users,
-  Settings,
   Crown,
   Star,
   Building,
-  MapPin,
   Calendar,
-  Phone,
   Edit,
   Save,
   X,
@@ -32,9 +29,8 @@ import {
   signInWithEmail,
   signUpWithEmail,
   signOut,
-  getCurrentUser,
 } from "@/lib/supabase";
-import { UserProfile, Team, TeamMember } from "@/types";
+import { UserProfile } from "@/types";
 
 interface AuthManagerProps {
   currentUser: any;
@@ -131,17 +127,17 @@ export function AuthManager({
       // Transform database data to UserProfile format
       return {
         id: data.id,
-        email: currentUser?.email,
+        email: currentUser?.email || "",
         username: data.username,
-        firstName: data.first_name,
-        lastName: data.last_name,
-        role: data.role || "agent",
-        department: data.department,
-        team: data.team,
-        licenseStates: data.license_states || [],
-        hireDate: data.hire_date,
-        avatar: data.avatar,
-        preferences: data.user_preferences || {
+        firstName: data.username.split("_")[0] || "User",
+        lastName: data.username.split("_")[1] || "",
+        role: "agent",
+        department: "Sales",
+        team: "Team A",
+        licenseStates: [],
+        hireDate: data.join_date,
+        avatar: "",
+        preferences: {
           theme: "auto",
           notifications: {
             achievements: true,
@@ -159,6 +155,8 @@ export function AuthManager({
           autoSave: true,
         },
         stats: {
+          id: data.id,
+          username: data.username,
           level: data.level,
           totalPoints: data.total_points,
           currentStreak: data.current_streak,
@@ -166,7 +164,16 @@ export function AuthManager({
           joinDate: data.join_date,
           lastActive: data.last_active,
           achievements: [],
-          stats: data.stats,
+          stats: {
+            objectivesCreated: data.stats?.objectives_created || 0,
+            objectivesCompleted: data.stats?.objectives_completed || 0,
+            keyResultsAchieved: data.stats?.key_results_achieved || 0,
+            checkInsCompleted: data.stats?.check_ins_completed || 0,
+            avgConfidenceLevel: data.stats?.avg_confidence_level || 0,
+            avgProgressRate: data.stats?.avg_progress_rate || 0,
+            totalSessions: data.stats?.total_sessions || 0,
+            totalTimeSpent: data.stats?.total_time_spent || 0,
+          },
         },
       } as UserProfile;
     } catch (error) {
