@@ -176,16 +176,7 @@ export const initializeSupabase = async () => {
       return false;
     }
 
-    // Check if user is already authenticated
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    if (!session) {
-      // Sign in anonymously for first-time users
-      await signInAnonymously();
-    }
-
+    console.log("Supabase initialized successfully");
     return true;
   } catch (error) {
     console.error("Error initializing Supabase:", error);
