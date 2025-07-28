@@ -157,3 +157,70 @@ This project is designed specifically for final expense insurance teams and incl
 - **Type Definitions**: Review `src/types/`
 
 Built with ❤️ for final expense insurance teams to achieve their sales objectives through better meetings and goal management.
+
+## 🚀 Quick-Start: Using the OKR Module
+
+### 1. High-Level Workflow
+
+1. Create an **OKR Cycle** (e.g. `2025 Q1`).
+2. Add **Objectives** within that cycle.
+3. Define **Key Results** for each objective.
+4. (Optional) add **Milestones** & weekly **Check-ins**.
+5. Archive or roll-over finished items.
+
+### 2. Field Reference
+
+| Entity     | Field            | Purpose                                   |
+| ---------- | ---------------- | ----------------------------------------- |
+| Objective  | Title            | Inspiring summary of the goal             |
+|            | Description      | Optional context / why it matters         |
+|            | Category / Level | Strategic, tactical, team, personal, etc. |
+|            | Owner            | Person accountable                        |
+|            | Quarter / Year   | Ties to cycle (e.g. `2025-Q1`)            |
+|            | Confidence       | 1-10 gut-check                            |
+| Key Result | Description      | Measurable outcome                        |
+|            | **Start Value**  | Baseline at cycle start                   |
+|            | **Target Value** | Goal by cycle end                         |
+|            | Unit             | %, $, #, calls, etc.                      |
+|            | Confidence       | 1-10 per KR                               |
+| Milestone  | Title / Due Date | Intermediate checkpoint                   |
+| Check-in   | Current Value    | Weekly progress snapshot                  |
+
+Progress % is auto-calculated:
+
+```text
+(Current − Start) ÷ (Target − Start) × 100 %
+```
+
+### 3. Creating Your First OKR
+
+1. **OKR Dashboard → “+ New Objective”**.
+2. Fill the fields, click **Save Objective**.
+3. Click **“+ Add Key Result”**, enter baseline & target numbers.
+4. (Optional) add milestones.
+5. Save – dashboard shows progress bars & status colors.
+
+### 4. Updating Progress Each Week
+
+1. Open objective → **Add Check-in**.
+2. Enter current value; app auto-calculates %.
+3. Adjust confidence & notes, then save.
+
+### 5. Archiving / Restoring
+
+• Open objective → **Archive** when complete/obsolete.
+• View or restore in **Archive Manager** (admin-only for delete).
+
+### 6. Gamification
+
+• Creating objective +100 pts, completing KR +50 pts, etc.
+• Points feed into levels & achievements in the **Gamification Panel**.
+
+### 7. Roles & Approvals
+
+• New users sign up → **Pending** until admin approval.
+• Only **approved** users can create/modify OKRs. Admins manage approvals and archive operations.
+
+---
+
+Copy this section into your internal wiki or print as a one-pager for onboarding.
