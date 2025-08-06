@@ -6,9 +6,6 @@ A comprehensive platform for final expense insurance call centers featuring AI-p
 
 ### 1. Environment Setup
 
-**IMPORTANT**: You must create a `.env.local` file with your Supabase credentials before running the application.
-
-See [`ENVIRONMENT_SETUP.md`](./ENVIRONMENT_SETUP.md) for detailed instructions and credentials.
 
 ### 2. Install Dependencies
 
