@@ -40,6 +40,7 @@ import {
   Archive,
   Bot,
   Shield,
+  LogOut,
 } from "lucide-react";
 import { SupabaseDataService } from "@/lib/supabaseDataService";
 import { GamificationService } from "@/lib/gamificationService";
@@ -537,6 +538,23 @@ function App() {
     console.log("AI analysis complete:", analysis);
   };
 
+  // Logout handler
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setCurrentUser(null);
+      setUserProfile(null);
+      setCurrentView("meetings");
+      // Clear any other state as needed
+      setCurrentTemplate(null);
+      setObjectives([]);
+      setTemplates([]);
+      setUserStats(null);
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
   const renderBreadcrumbs = () => {
     if (currentView === "meetings") return null;
 
@@ -634,11 +652,22 @@ function App() {
               </p>
             </div>
           </div>
-          {userProfile.role === "admin" && (
-            <div className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">
-              Admin Access
-            </div>
-          )}
+          <div className="flex items-center gap-3">
+            {userProfile.role === "admin" && (
+              <div className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">
+                Admin Access
+              </div>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleLogout}
+              className="flex items-center gap-2"
+            >
+              <LogOut className="h-4 w-4" />
+              Sign Out
+            </Button>
+          </div>
         </div>
 
         {/* Main Navigation */}

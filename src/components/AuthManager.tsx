@@ -185,7 +185,7 @@ export function AuthManager({
 
       if (data.user) {
         setSuccess(
-          "Account created successfully! Please check your email to verify your account, then wait for admin approval."
+          "Account created successfully! Please check your email and click the confirmation link, then wait for admin approval."
         );
         onAuthStateChange(data.user);
         setCurrentView("pending");
