@@ -26,6 +26,7 @@ interface ControlPanelProps {
   onImportTemplate: (template: MeetingTemplate) => void;
   currentTemplate: MeetingTemplate | null;
   hasApiKey: boolean;
+  userTemplates: MeetingTemplate[];
 }
 
 export function ControlPanel({
@@ -36,6 +37,7 @@ export function ControlPanel({
   onImportTemplate,
   currentTemplate,
   hasApiKey,
+  userTemplates,
 }: ControlPanelProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -165,53 +167,80 @@ export function ControlPanel({
             <h3 className="text-sm font-medium text-gray-700 text-center mb-3">
               Final Expense Call Center Templates
             </h3>
-            <div className="flex flex-wrap gap-2 justify-center">
-              <Button
-                onClick={() => handleLoadTemplate("product")}
-                variant="secondary"
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <BookOpen className="h-4 w-4" />
-                Product Training
-              </Button>
-              <Button
-                onClick={() => handleLoadTemplate("coaching")}
-                variant="secondary"
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <Users className="h-4 w-4" />
-                Agent Coaching
-              </Button>
-              <Button
-                onClick={() => handleLoadTemplate("manager")}
-                variant="secondary"
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <TrendingUp className="h-4 w-4" />
-                Manager Best Practices
-              </Button>
-              <Button
-                onClick={() => handleLoadTemplate("metrics")}
-                variant="secondary"
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <BarChart className="h-4 w-4" />
-                Metrics & KPIs
-              </Button>
-              <Button
-                onClick={() => handleLoadTemplate("salesOps")}
-                variant="secondary"
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <Settings className="h-4 w-4" />
-                Sales Operations
-              </Button>
+            
+            {/* Built-in Templates */}
+            <div className="mb-4">
+              <h4 className="text-xs font-medium text-gray-600 mb-2">Built-in Templates</h4>
+              <div className="flex flex-wrap gap-2 justify-center">
+                <Button
+                  onClick={() => handleLoadTemplate("product")}
+                  variant="secondary"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <BookOpen className="h-4 w-4" />
+                  Product Training
+                </Button>
+                <Button
+                  onClick={() => handleLoadTemplate("coaching")}
+                  variant="secondary"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <Users className="h-4 w-4" />
+                  Agent Coaching
+                </Button>
+                <Button
+                  onClick={() => handleLoadTemplate("manager")}
+                  variant="secondary"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <TrendingUp className="h-4 w-4" />
+                  Manager Best Practices
+                </Button>
+                <Button
+                  onClick={() => handleLoadTemplate("metrics")}
+                  variant="secondary"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <BarChart className="h-4 w-4" />
+                  Metrics & KPIs
+                </Button>
+                <Button
+                  onClick={() => handleLoadTemplate("salesOps")}
+                  variant="secondary"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <Settings className="h-4 w-4" />
+                  Sales Operations
+                </Button>
+              </div>
             </div>
+
+            {/* User-Created Templates */}
+            {userTemplates.length > 0 && (
+              <div>
+                <h4 className="text-xs font-medium text-gray-600 mb-2">Your Saved Templates</h4>
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {userTemplates.map((template, index) => (
+                    <Button
+                      key={index}
+                      onClick={() => onLoadTemplate(template)}
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-2 max-w-48 truncate"
+                      title={template.meetingTitle}
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      {template.meetingTitle}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

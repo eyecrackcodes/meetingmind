@@ -682,10 +682,24 @@ export function AuthManager({
               )}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">
-              Your account request is being reviewed by an administrator. You
-              will receive an email notification once your account is approved.
-            </p>
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Your account request is being reviewed by an administrator. You
+                will receive an email notification once your account is approved.
+              </p>
+              
+              {/* Help for first-time setup */}
+              <div className="text-xs text-muted-foreground bg-blue-50 border border-blue-200 rounded-md p-3">
+                <div className="font-medium text-blue-700 mb-1">
+                  📋 First time setting up the system?
+                </div>
+                <div className="space-y-1">
+                  <div>• If you're the admin, run the bootstrap script in your database</div>
+                  <div>• Check the USER_APPROVAL_SETUP.md file for instructions</div>
+                  <div>• Contact your system administrator for approval</div>
+                </div>
+              </div>
+            </div>
           )}
 
           <div className="pt-4 border-t">

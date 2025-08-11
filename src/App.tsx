@@ -231,6 +231,10 @@ function App() {
     // Save template and track activity
     await dataService.saveTemplate(template);
     trackActivity("template_generated", { template: template.meetingTitle });
+    
+    // Refresh templates list
+    const updatedTemplates = await dataService.getTemplates();
+    setTemplates(updatedTemplates);
   };
 
   const handleImportTemplate = async (template: MeetingTemplate) => {
@@ -244,6 +248,10 @@ function App() {
       template: template.meetingTitle,
       imported: true,
     });
+    
+    // Refresh templates list
+    const updatedTemplates = await dataService.getTemplates();
+    setTemplates(updatedTemplates);
   };
 
   const handleProgressUpdate = (newProgress: {
@@ -707,6 +715,7 @@ function App() {
               onImportTemplate={handleImportTemplate}
               currentTemplate={currentTemplate}
               hasApiKey={!!apiKey}
+              userTemplates={templates}
             />
 
             {showTemplateEditor && (
