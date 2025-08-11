@@ -580,6 +580,25 @@ export class SupabaseDataService {
     });
 
     try {
+      // First check if a template with the same title already exists for this user
+      const { data: existingTemplates, error: checkError } = await supabase
+        .from("meeting_templates")
+        .select("id, meeting_title")
+        .eq("user_id", this.currentUser.id)
+        .eq("meeting_title", template.meetingTitle);
+
+      if (checkError) {
+        console.error("Error checking existing templates:", checkError);
+        return false;
+      }
+
+      if (existingTemplates && existingTemplates.length > 0) {
+        console.log("Template with this title already exists:", existingTemplates);
+        // Template already exists, don't create a duplicate
+        return true;
+      }
+
+      // Template doesn't exist, create a new one
       const { data, error } = await supabase.from("meeting_templates").insert({
         user_id: this.currentUser.id,
         meeting_title: template.meetingTitle,

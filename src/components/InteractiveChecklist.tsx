@@ -42,6 +42,7 @@ export function InteractiveChecklist({
   const [expandedSections, setExpandedSections] = useState<string[]>([
     "section-0",
   ]);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Calculate total items and update progress
   useEffect(() => {
@@ -87,22 +88,27 @@ export function InteractiveChecklist({
     setExpandedSections(value);
   };
 
-  const handleSaveAsPersonalTemplate = () => {
-    if (!onSaveTemplate) return;
+  const handleSaveAsPersonalTemplate = async () => {
+    if (!onSaveTemplate || isSaving) return;
     
     const confirmed = confirm(
       "Save this template to your personal templates? This will allow you to reuse it later and see it in 'Your Saved Templates' section."
     );
     
     if (confirmed) {
-      // Create a copy with a unique identifier to distinguish from built-in templates
-      const personalTemplate: MeetingTemplate = {
-        ...template,
-        meetingTitle: `${template.meetingTitle} (Personal Copy)`,
-        createdDate: new Date().toISOString(),
-      };
-      
-      onSaveTemplate(personalTemplate);
+      setIsSaving(true);
+      try {
+        // Create a copy with a unique identifier to distinguish from built-in templates
+        const personalTemplate: MeetingTemplate = {
+          ...template,
+          meetingTitle: `${template.meetingTitle} (Personal Copy)`,
+          createdDate: new Date().toISOString(),
+        };
+        
+        await onSaveTemplate(personalTemplate);
+      } finally {
+        setIsSaving(false);
+      }
     }
   };
 
@@ -190,9 +196,10 @@ export function InteractiveChecklist({
                 onClick={handleSaveAsPersonalTemplate}
                 size="sm"
                 className="flex items-center gap-2"
+                disabled={isSaving}
               >
                 <Save className="h-4 w-4" />
-                Save as Personal Template
+                {isSaving ? "Saving..." : "Save as Personal Template"}
               </Button>
             )}
           </div>
