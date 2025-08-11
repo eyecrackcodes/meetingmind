@@ -564,10 +564,23 @@ export class SupabaseDataService {
   }
 
   async saveTemplate(template: MeetingTemplate): Promise<boolean> {
-    if (!this.currentUser) return false;
+    if (!this.currentUser) {
+      console.error("Cannot save template: No current user");
+      return false;
+    }
+
+    console.log("Saving template for user:", this.currentUser.id);
+    console.log("Template data:", {
+      meeting_title: template.meetingTitle,
+      meeting_date: template.meetingDate,
+      facilitator: template.facilitator,
+      core_question: template.coreQuestion,
+      meeting_context: template.meetingContext,
+      sections_count: template.sections?.length,
+    });
 
     try {
-      const { error } = await supabase.from("meeting_templates").insert({
+      const { data, error } = await supabase.from("meeting_templates").insert({
         user_id: this.currentUser.id,
         meeting_title: template.meetingTitle,
         meeting_date: template.meetingDate,
@@ -581,16 +594,23 @@ export class SupabaseDataService {
         usage_count: template.usageCount || 0,
         archived_date: template.archivedDate,
         archived_by: template.archivedBy,
-      });
+      }).select();
 
       if (error) {
-        console.error("Error saving template:", error);
+        console.error("Database error saving template:", error);
+        console.error("Error details:", {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+        });
         return false;
       }
 
+      console.log("Template saved successfully:", data);
       return true;
     } catch (error) {
-      console.error("Error saving template:", error);
+      console.error("Exception saving template:", error);
       return false;
     }
   }

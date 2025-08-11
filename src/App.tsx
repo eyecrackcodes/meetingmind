@@ -258,19 +258,30 @@ function App() {
 
   const handleSavePersonalTemplate = async (template: MeetingTemplate) => {
     try {
+      console.log("Attempting to save template:", template.meetingTitle);
+      console.log("Current user:", currentUser);
+      console.log("User profile:", userProfile);
+      
       // Save template to database
-      await dataService.saveTemplate(template);
+      const saveResult = await dataService.saveTemplate(template);
+      console.log("Save result:", saveResult);
+      
+      if (!saveResult) {
+        throw new Error("Save operation returned false - check database permissions or connection");
+      }
+      
       trackActivity("template_generated", { template: template.meetingTitle });
       
       // Refresh templates list
       const updatedTemplates = await dataService.getTemplates();
+      console.log("Updated templates after save:", updatedTemplates.length);
       setTemplates(updatedTemplates);
       
       // Success feedback (could be replaced with a toast notification)
       alert(`Template "${template.meetingTitle}" saved to your personal templates!`);
     } catch (error) {
       console.error("Error saving personal template:", error);
-      alert("Failed to save template. Please try again.");
+      alert(`Failed to save template: ${error instanceof Error ? error.message : 'Unknown error'}. Check the browser console for details.`);
     }
   };
 
