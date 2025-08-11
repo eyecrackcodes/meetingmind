@@ -262,6 +262,15 @@ function App() {
       console.log("Current user:", currentUser);
       console.log("User profile:", userProfile);
       
+      // Check authentication before attempting save
+      if (!currentUser) {
+        throw new Error("You are not authenticated. Please sign out and sign back in.");
+      }
+      
+      if (!userProfile || userProfile.approvalStatus !== "approved") {
+        throw new Error("Your account is not approved. Please contact an administrator.");
+      }
+      
       // Save template to database
       const saveResult = await dataService.saveTemplate(template);
       console.log("Save result:", saveResult);
