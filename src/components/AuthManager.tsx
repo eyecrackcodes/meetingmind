@@ -191,7 +191,25 @@ export function AuthManager({
         setCurrentView("pending");
       }
     } catch (err: any) {
-      setError(err.message || "Failed to create account");
+      console.error("Signup error details:", err);
+      
+      // Provide more specific error messages
+      let errorMessage = "Failed to create account";
+      if (err.message) {
+        if (err.message.includes("User already registered")) {
+          errorMessage = "An account with this email already exists. Please try logging in instead.";
+        } else if (err.message.includes("Database error")) {
+          errorMessage = "Database configuration error. Please contact your administrator and check the setup guide.";
+        } else if (err.message.includes("Invalid email")) {
+          errorMessage = "Please enter a valid email address.";
+        } else if (err.message.includes("Weak password")) {
+          errorMessage = "Password is too weak. Please use at least 8 characters with numbers and letters.";
+        } else {
+          errorMessage = `Signup failed: ${err.message}`;
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

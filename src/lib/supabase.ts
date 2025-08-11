@@ -15,19 +15,27 @@ if (!supabaseAnonKey) {
   throw new Error("Missing VITE_SUPABASE_ANON_KEY environment variable");
 }
 
-// Create Supabase client
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-  },
-  realtime: {
-    params: {
-      eventsPerSecond: 10,
-    },
-  },
-});
+// Create Supabase client (singleton pattern to prevent multiple instances)
+let supabaseInstance: ReturnType<typeof createClient<Database>> | null = null;
+
+export const supabase = (() => {
+  if (!supabaseInstance) {
+    supabaseInstance = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+        storageKey: 'meetingmind-auth', // Unique storage key
+      },
+      realtime: {
+        params: {
+          eventsPerSecond: 10,
+        },
+      },
+    });
+  }
+  return supabaseInstance;
+})();
 
 // Service role client for admin operations (use carefully)
 export const supabaseAdmin = supabaseServiceKey
