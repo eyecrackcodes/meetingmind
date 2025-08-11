@@ -37,15 +37,23 @@ export const supabase = (() => {
   return supabaseInstance;
 })();
 
-// Service role client for admin operations (use carefully)
-export const supabaseAdmin = supabaseServiceKey
-  ? createClient<Database>(supabaseUrl, supabaseServiceKey, {
+// Service role client for admin operations (use carefully) - singleton pattern
+let supabaseAdminInstance: ReturnType<typeof createClient<Database>> | null = null;
+
+export const supabaseAdmin = (() => {
+  if (!supabaseServiceKey) return null;
+  
+  if (!supabaseAdminInstance) {
+    supabaseAdminInstance = createClient<Database>(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false,
+        storageKey: 'meetingmind-admin-auth', // Different storage key for admin
       },
-    })
-  : null;
+    });
+  }
+  return supabaseAdminInstance;
+})();
 
 // Authentication helpers
 export const getCurrentUser = async () => {
