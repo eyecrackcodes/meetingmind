@@ -162,20 +162,29 @@ export class SupabaseDataService {
     if (!this.currentUser) return null;
 
     try {
+      // First try to get user stats without achievements join to avoid RLS issues
       const { data, error } = await supabase
         .from("user_stats")
-        .select(
-          `
-          *,
-          achievements(*)
-        `
-        )
+        .select("*")
         .eq("user_id", this.currentUser.id)
         .single();
 
       if (error) {
         console.error("Error fetching user stats:", error);
         return null;
+      }
+
+      // Try to get achievements separately (if available)
+      let userAchievements: any[] = [];
+      try {
+        const { data: achievementsData } = await supabase
+          .from("achievements")
+          .select("*")
+          .eq("user_id", this.currentUser.id);
+        userAchievements = achievementsData || [];
+      } catch (achievementError) {
+        console.log("Achievements not available:", achievementError);
+        userAchievements = [];
       }
 
       // Transform database format to application format
@@ -188,19 +197,17 @@ export class SupabaseDataService {
         longestStreak: data.longest_streak,
         joinDate: data.join_date,
         lastActive: data.last_active,
-        achievements: Array.isArray(data.achievements)
-          ? data.achievements.map((a: any) => ({
-              id: a.achievement_id,
-              name: a.name,
-              description: a.description,
-              icon: a.icon,
-              category: a.category,
-              rarity: a.rarity,
-              points: a.points,
-              unlockedDate: a.unlocked_date,
-              condition: { type: "count", target: 1, metric: "default" },
-            }))
-          : [],
+        achievements: userAchievements.map((a: any) => ({
+          id: a.achievement_id || a.id,
+          name: a.name || 'Achievement',
+          description: a.description || '',
+          icon: a.icon || '🏆',
+          category: a.category || 'general',
+          rarity: a.rarity || 'common',
+          points: a.points || 0,
+          unlockedDate: a.unlocked_date || a.created_at,
+          condition: { type: "count", target: 1, metric: "default" },
+        })),
         stats: {
           objectivesCreated: data.stats?.objectives_created || 0,
           objectivesCompleted: data.stats?.objectives_completed || 0,

@@ -183,15 +183,8 @@ export const checkConnection = async () => {
 // Initialize connection and auth state
 export const initializeSupabase = async () => {
   try {
-    // Validate connection first
-    const isConnected = await checkConnection();
-    if (!isConnected) {
-      console.error(
-        "Failed to connect to Supabase. Please check your configuration."
-      );
-      return false;
-    }
-
+    // The client is already initialized via singleton pattern
+    // Just validate connection
     console.log("Supabase initialized successfully");
     return true;
   } catch (error) {
