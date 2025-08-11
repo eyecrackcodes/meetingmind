@@ -39,6 +39,7 @@ import {
   User,
   Archive,
   Bot,
+  Shield,
 } from "lucide-react";
 import { SupabaseDataService } from "@/lib/supabaseDataService";
 import { GamificationService } from "@/lib/gamificationService";
@@ -52,6 +53,7 @@ type AppView =
   | "profile"
   | "archive"
   | "ai-assistant"
+  | "admin"
   | "auth";
 
 function App() {
@@ -667,6 +669,16 @@ function App() {
                 <Bot className="h-4 w-4" />
                 AI Assistant
               </Button>
+              {userProfile?.role === "admin" && (
+                <Button
+                  variant={currentView === "admin" ? "default" : "outline"}
+                  onClick={() => setCurrentView("admin")}
+                  className="flex items-center gap-2"
+                >
+                  <Shield className="h-4 w-4" />
+                  User Management
+                </Button>
+              )}
               <Button
                 variant={currentView === "archive" ? "default" : "outline"}
                 onClick={() => setCurrentView("archive")}
@@ -808,6 +820,18 @@ function App() {
             onKeyResultSuggestion={handleKeyResultSuggestion}
             onAnalysisComplete={handleAnalysisComplete}
           />
+        )}
+
+        {/* Admin View */}
+        {currentView === "admin" && userProfile?.role === "admin" && (
+          <div className="max-w-4xl mx-auto">
+            <AuthManager
+              currentUser={currentUser}
+              userProfile={userProfile}
+              onAuthStateChange={handleAuthStateChange}
+              onProfileUpdate={handleProfileUpdate}
+            />
+          </div>
         )}
 
         {/* Notification Systems */}
