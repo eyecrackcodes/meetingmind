@@ -88,6 +88,12 @@ function App() {
   useEffect(() => {
     const initializeApp = async () => {
       try {
+        // Prevent multiple initializations
+        if (typeof window !== 'undefined' && (window as any).supabaseInitialized) {
+          return;
+        }
+        (window as any).supabaseInitialized = true;
+
         // Initialize Supabase connection
         const isConnected = await initializeSupabase();
         if (!isConnected) {
@@ -151,9 +157,13 @@ function App() {
           dataService.getPreferences(),
         ]);
 
+      // Combine Supabase templates with localStorage templates
+      const localTemplates = JSON.parse(localStorage.getItem('user_templates') || '[]');
+      const allTemplates = [...templatesData, ...localTemplates];
+
       setUserStats(stats);
       setObjectives(objectivesData);
-      setTemplates(templatesData);
+      setTemplates(allTemplates);
       setCycles(cyclesData);
 
       // Set default view from preferences
@@ -271,20 +281,27 @@ function App() {
         throw new Error("Your account is not approved. Please contact an administrator.");
       }
       
-      // Save template to database
-      const saveResult = await dataService.saveTemplate(template);
-      console.log("Save result:", saveResult);
+      // For now, save to localStorage (can be migrated to database later)
+      const existingTemplates = JSON.parse(localStorage.getItem('user_templates') || '[]');
+      const templateToSave = {
+        ...template,
+        id: `template_${Date.now()}`,
+        user_id: currentUser.id,
+        created_at: new Date().toISOString(),
+        saved_personally: true
+      };
       
-      if (!saveResult) {
-        throw new Error("Save operation returned false - check database permissions or connection");
-      }
+      existingTemplates.push(templateToSave);
+      localStorage.setItem('user_templates', JSON.stringify(existingTemplates));
+      
+      console.log("Template saved to localStorage successfully");
       
       trackActivity("template_generated", { template: template.meetingTitle });
       
-      // Refresh templates list
-      const updatedTemplates = await dataService.getTemplates();
-      console.log("Updated templates after save:", updatedTemplates.length);
-      setTemplates(updatedTemplates);
+      // Refresh templates list by including localStorage templates
+      const supabaseTemplates = await dataService.getTemplates();
+      const localTemplates = JSON.parse(localStorage.getItem('user_templates') || '[]');
+      setTemplates([...supabaseTemplates, ...localTemplates]);
       
       // Success feedback (could be replaced with a toast notification)
       alert(`Template "${template.meetingTitle}" saved to your personal templates!`);
