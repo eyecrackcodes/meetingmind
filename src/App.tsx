@@ -221,8 +221,7 @@ function App() {
     setCurrentTemplate(template);
     setShowTemplateEditor(false);
 
-    // Save template and track activity
-    await dataService.saveTemplate(template);
+    // Track activity (but don't auto-save the template)
     trackActivity("meeting_completed", { template: template.meetingTitle });
   };
 
@@ -255,6 +254,24 @@ function App() {
     // Refresh templates list
     const updatedTemplates = await dataService.getTemplates();
     setTemplates(updatedTemplates);
+  };
+
+  const handleSavePersonalTemplate = async (template: MeetingTemplate) => {
+    try {
+      // Save template to database
+      await dataService.saveTemplate(template);
+      trackActivity("template_generated", { template: template.meetingTitle });
+      
+      // Refresh templates list
+      const updatedTemplates = await dataService.getTemplates();
+      setTemplates(updatedTemplates);
+      
+      // Success feedback (could be replaced with a toast notification)
+      alert(`Template "${template.meetingTitle}" saved to your personal templates!`);
+    } catch (error) {
+      console.error("Error saving personal template:", error);
+      alert("Failed to save template. Please try again.");
+    }
   };
 
   const handleProgressUpdate = (newProgress: {
@@ -789,6 +806,7 @@ function App() {
                 <InteractiveChecklist
                   template={currentTemplate}
                   onProgressUpdate={handleProgressUpdate}
+                  onSaveTemplate={handleSavePersonalTemplate}
                 />
               </>
             )}

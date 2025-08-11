@@ -16,6 +16,7 @@ import {
   User,
   HelpCircle,
   FileText,
+  Save,
 } from "lucide-react";
 import { MeetingTemplate } from "@/types";
 import { formatDate } from "@/lib/utils";
@@ -27,11 +28,13 @@ interface InteractiveChecklistProps {
     completedItems: number;
     percentage: number;
   }) => void;
+  onSaveTemplate?: (template: MeetingTemplate) => void;
 }
 
 export function InteractiveChecklist({
   template,
   onProgressUpdate,
+  onSaveTemplate,
 }: InteractiveChecklistProps) {
   const [checkedItems, setCheckedItems] = useState<{ [key: string]: boolean }>(
     {}
@@ -82,6 +85,25 @@ export function InteractiveChecklist({
 
   const handleAccordionChange = (value: string[]) => {
     setExpandedSections(value);
+  };
+
+  const handleSaveAsPersonalTemplate = () => {
+    if (!onSaveTemplate) return;
+    
+    const confirmed = confirm(
+      "Save this template to your personal templates? This will allow you to reuse it later and see it in 'Your Saved Templates' section."
+    );
+    
+    if (confirmed) {
+      // Create a copy with a unique identifier to distinguish from built-in templates
+      const personalTemplate: MeetingTemplate = {
+        ...template,
+        meetingTitle: `${template.meetingTitle} (Personal Copy)`,
+        createdDate: new Date().toISOString(),
+      };
+      
+      onSaveTemplate(personalTemplate);
+    }
   };
 
   return (
@@ -162,6 +184,17 @@ export function InteractiveChecklist({
               <RotateCcw className="h-4 w-4" />
               Reset Progress
             </Button>
+            {onSaveTemplate && (
+              <Button
+                variant="default"
+                onClick={handleSaveAsPersonalTemplate}
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <Save className="h-4 w-4" />
+                Save as Personal Template
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>

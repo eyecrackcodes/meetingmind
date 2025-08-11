@@ -223,7 +223,10 @@ export function ControlPanel({
             {/* User-Created Templates */}
             {userTemplates.length > 0 && (
               <div>
-                <h4 className="text-xs font-medium text-gray-600 mb-2">Your Saved Templates</h4>
+                <h4 className="text-xs font-medium text-blue-600 mb-2">Your Saved Templates</h4>
+                <p className="text-xs text-gray-500 mb-3 text-center">
+                  These are templates you've personally saved using "Save as Personal Template"
+                </p>
                 <div className="flex flex-wrap gap-2 justify-center">
                   {userTemplates.map((template, index) => (
                     <Button
@@ -231,14 +234,21 @@ export function ControlPanel({
                       onClick={() => onLoadTemplate(template)}
                       variant="outline"
                       size="sm"
-                      className="flex items-center gap-2 max-w-48 truncate"
+                      className="flex items-center gap-2 max-w-48 truncate border-blue-200 hover:border-blue-300"
                       title={template.meetingTitle}
                     >
-                      <Sparkles className="h-4 w-4" />
+                      <Sparkles className="h-4 w-4 text-blue-500" />
                       {template.meetingTitle}
                     </Button>
                   ))}
                 </div>
+              </div>
+            )}
+            
+            {userTemplates.length === 0 && (
+              <div className="text-center text-gray-500 text-xs">
+                <p>No personal templates yet.</p>
+                <p className="mt-1">Use any built-in template above, then click "Save as Personal Template" to create your own.</p>
               </div>
             )}
           </div>
